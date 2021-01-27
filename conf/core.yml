@@ -1,0 +1,24 @@
+port: 9999
+thread: 156
+authenticate: false
+directMemory: true
+
+zookeeper:
+  broker: x
+  port: 2181
+
+cache:
+  enabled: true
+  size: 3g
+  directMemory: true
+  evictTime: 10min
+  readThroughSize: 512k
+  impl: caffeine
+  quotaEnabled: true
+
+metrics:
+  monitorLevel: nm
+  reportInterval: 60s
+  kafkaBroker: bjlt-h12.sy:9092,bjlt-h13.sy:9092,bjlt-h14.sy:9092,bjlt-h15.sy:9092,bjlt-h16.sy:9092
+  kafkaTopic: dataarch_spark_shuffleservice_metrics
+  histogramTimeWindow: 1min
