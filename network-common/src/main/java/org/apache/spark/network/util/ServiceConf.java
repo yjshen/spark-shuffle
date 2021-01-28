@@ -1,10 +1,9 @@
-package com.kwai;
+package org.apache.spark.network.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import org.apache.spark.network.util.JavaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;

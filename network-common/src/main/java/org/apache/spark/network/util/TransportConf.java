@@ -41,11 +41,11 @@ public class TransportConf {
     private final String SPARK_NETWORK_IO_LAZYFD_KEY;
     private final String SPARK_NETWORK_VERBOSE_METRICS;
 
-    private final ConfigProvider conf;
+    private final ServiceConf conf;
 
     private final String module;
 
-    public TransportConf(String module, ConfigProvider conf) {
+    public TransportConf(String module, ServiceConf conf) {
         this.module = module;
         this.conf = conf;
         SPARK_NETWORK_IO_MODE_KEY = getConfKey("io.mode");
