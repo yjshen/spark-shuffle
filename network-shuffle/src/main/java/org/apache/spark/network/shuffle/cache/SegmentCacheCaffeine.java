@@ -79,10 +79,10 @@ public class SegmentCacheCaffeine extends ShuffleSegmentCache {
                 .removalListener(removalListener)
                 .recordStats(() -> new CaffeineCacheMetrics(registry,"caffeine"));
 
-        long expirationAfterAccess = conf.getLong("spark.shuffle.cache.evict.time", -1);
+        long expirationAfterAccess = conf.cacheEvictTimeSec();
         if (expirationAfterAccess > 0) {
-            builder.expireAfterAccess(Duration.ofMinutes(expirationAfterAccess));
-            logger.warn("Caffeine cache configured to evict shuffle segment after {} minutes since its last access",
+            builder.expireAfterAccess(Duration.ofSeconds(expirationAfterAccess));
+            logger.warn("Caffeine cache configured to evict shuffle segment after {} seconds since its last access",
                     expirationAfterAccess);
         }
 
@@ -91,7 +91,7 @@ public class SegmentCacheCaffeine extends ShuffleSegmentCache {
         if (expirationAfterAccess > 0) {
             ScheduledExecutorService eagerCleaner = Executors.newSingleThreadScheduledExecutor();
             eagerCleaner.scheduleAtFixedRate(shuffleSegmentCache::cleanUp,
-                expirationAfterAccess, expirationAfterAccess, TimeUnit.MINUTES);
+                expirationAfterAccess, expirationAfterAccess, TimeUnit.SECONDS);
         }
     }
 

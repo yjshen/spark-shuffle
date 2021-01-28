@@ -80,9 +80,9 @@ public class SegmentCacheGuava extends ShuffleSegmentCache {
             .removalListener(removalListener)
             .recordStats();
 
-        long expirationAfterAccess = conf.getLong("spark.shuffle.cache.evict.time", -1);
+        long expirationAfterAccess = conf.cacheEvictTimeSec();
         if (expirationAfterAccess > 0) {
-            builder.expireAfterAccess(expirationAfterAccess, TimeUnit.MINUTES);
+            builder.expireAfterAccess(expirationAfterAccess, TimeUnit.SECONDS);
             logger.warn("Guava cache configured to evict shuffle segment after {} minutes since its last access",
                 expirationAfterAccess);
         }
@@ -92,7 +92,7 @@ public class SegmentCacheGuava extends ShuffleSegmentCache {
         if (expirationAfterAccess > 0) {
             ScheduledExecutorService eagerCleaner = Executors.newSingleThreadScheduledExecutor();
             eagerCleaner.scheduleAtFixedRate(shuffleSegmentCache::cleanUp,
-                expirationAfterAccess, expirationAfterAccess, TimeUnit.MINUTES);
+                expirationAfterAccess, expirationAfterAccess, TimeUnit.SECONDS);
         }
 
         registry.registerAll(

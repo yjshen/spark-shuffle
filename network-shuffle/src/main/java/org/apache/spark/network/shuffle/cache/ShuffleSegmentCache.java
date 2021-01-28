@@ -70,7 +70,7 @@ public abstract class ShuffleSegmentCache {
         this.monitor = monitor;
         this.cacheSizeByAppId = Maps.newConcurrentMap();
         this.conf = conf;
-        this.useDirectMemory = conf.getBoolean("spark.shuffle.cache.prefer.direct.memory", true);
+        this.useDirectMemory = conf.cachePreferDirect();
     }
 
     protected ByteBuf loadShuffleSegment(ShuffleSegment segment) throws IOException {

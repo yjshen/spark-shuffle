@@ -1,7 +1,12 @@
 port: 9999
-thread: 156
-authenticate: false
 directMemory: true
+connectionTimeout: 2min
+serverThreads: 156
+maxRetries: 3
+retryWait: 5s
+lazyFD: true
+memoryMapThreshold: 2m
+w: 22
 
 zookeeper:
   broker: x

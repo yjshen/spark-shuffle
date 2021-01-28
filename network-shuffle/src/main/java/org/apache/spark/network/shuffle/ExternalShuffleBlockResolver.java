@@ -111,10 +111,9 @@ public class ExternalShuffleBlockResolver {
       File registeredExecutorFile,
       Executor directoryCleaner) throws IOException {
     this.conf = conf;
-    this.rddFetchEnabled =
-      Boolean.valueOf(conf.get(Constants.SHUFFLE_SERVICE_FETCH_RDD_ENABLED, "true"));
+    this.rddFetchEnabled = false;
     this.registeredExecutorFile = registeredExecutorFile;
-    String indexCacheSize = conf.get("spark.shuffle.service.index.cache.size", "100m");
+    String indexCacheSize = "100m";
     CacheLoader<File, ShuffleIndexInformation> indexCacheLoader =
         new CacheLoader<File, ShuffleIndexInformation>() {
           public ShuffleIndexInformation load(File file) throws IOException {

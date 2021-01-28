@@ -28,6 +28,7 @@ import org.apache.spark.network.server.RpcHandler;
 import org.apache.spark.network.server.StreamManager;
 import org.apache.spark.network.server.TransportServer;
 import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -59,9 +60,9 @@ public class RequestTimeoutIntegrationSuite {
 
   @Before
   public void setUp() throws Exception {
-    Map<String, String> configMap = new HashMap<>();
-    configMap.put("spark.shuffle.io.connectionTimeout", "10s");
-    conf = new TransportConf("shuffle", new MapConfigProvider(configMap));
+    ServiceConf sc = new ServiceConf();
+    sc.setConnectionTimeout("10s");
+    conf = new TransportConf("shuffle", sc);
 
     defaultManager = new StreamManager() {
       @Override

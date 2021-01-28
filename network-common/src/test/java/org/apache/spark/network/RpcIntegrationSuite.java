@@ -36,6 +36,7 @@ import org.apache.spark.network.server.StreamManager;
 import org.apache.spark.network.server.TransportServer;
 import org.apache.spark.network.util.JavaUtils;
 import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -70,7 +71,7 @@ public class RpcIntegrationSuite {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        conf = new TransportConf("shuffle", MapConfigProvider.EMPTY);
+        conf = new TransportConf("shuffle", new ServiceConf());
         testData = new StreamTestHelper();
         rpcHandler = new RpcHandler() {
             @Override

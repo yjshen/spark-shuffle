@@ -163,10 +163,9 @@ public class ExternalShuffleBlockResolverWithCache {
         this.registeredExecutorFile = registeredExecutorFile;
         this.registry = registry;
 
-        int metricsHistogramTimeWindowSize =
-            conf.getInt("spark.shuffle.metrics.histogram.time.window", 1);
+        long metricsHistogramTimeWindowSize = conf.metricsHistogramTimeSec();
 
-        String monitorLevel = conf.get("spark.shuffle.metrics.monitor.level", "none");
+        String monitorLevel = conf.metricsMonitorLevel();
 
         if (monitorLevel.equalsIgnoreCase("app")
                 || monitorLevel.equalsIgnoreCase("nm")) {
@@ -176,7 +175,7 @@ public class ExternalShuffleBlockResolverWithCache {
             this.cacheMonitor = BlockManagerMonitor.DUMMY_MONITOR;
         }
 
-        String indexCacheSize = conf.get("spark.shuffle.service.index.cache.size", "100m");
+        String indexCacheSize = "100m";
         CacheLoader<File, ShuffleIndexInformation> indexCacheLoader =
             new CacheLoader<File, ShuffleIndexInformation>() {
                 public ShuffleIndexInformation load(File file) throws IOException {
@@ -196,21 +195,16 @@ public class ExternalShuffleBlockResolverWithCache {
         this.directoryCleaner = directoryCleaner;
 
         // fields and properties for shuffle segment cache
-        String readThroughThreshold = conf.get("spark.shuffle.cache.read.through.size", "4m");
-        this.readThroughSize = JavaUtils.byteStringAsBytes(readThroughThreshold);
-
-        String cacheSizeThreshold = conf.get("spark.shuffle.cache.size", "4g");
-        Double cacheSafetyFraction = conf.getDouble("spark.shuffle.cache.safetyFraction", 1);
-        long cacheCapacity = (long) (JavaUtils.byteStringAsBytes(cacheSizeThreshold) * cacheSafetyFraction);
+        this.readThroughSize = conf.cacheReadThroughSize();
+        long cacheCapacity = conf.cacheSize();
 
         this.shuffleFiles = Maps.newConcurrentMap();
         this.fileToSegments = Maps.newConcurrentMap();
         this.fetching = Sets.newHashSet();
 
-        this.cacheQuotaEnabled = Boolean.parseBoolean(
-            conf.get("spark.shuffle.cache.quota.enabled", "true"));
+        this.cacheQuotaEnabled = conf.cacheQuotaEnabled();
+        String cacheImpl = conf.cacheImpl();
 
-        String cacheImpl = conf.get("spark.shuffle.cache.impl", "caffeine");
         if (cacheImpl.equalsIgnoreCase("caffeine")) {
             this.shuffleSegmentCache = new SegmentCacheCaffeine(cacheCapacity, registry, cacheMonitor, conf);
         } else {

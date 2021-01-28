@@ -28,6 +28,7 @@ import org.apache.spark.network.server.TransportServer;
 import org.apache.spark.network.util.ConfigProvider;
 import org.apache.spark.network.util.JavaUtils;
 import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.After;
 import org.junit.Assert;
@@ -50,7 +51,7 @@ public class TransportClientFactorySuite {
 
     @Before
     public void setUp() {
-        conf = new TransportConf("shuffle", MapConfigProvider.EMPTY);
+        conf = new TransportConf("shuffle", new ServiceConf());
         RpcHandler rpcHandler = new NoOpRpcHandler();
         context = new TransportContext(conf, rpcHandler);
         server1 = context.createServer();
@@ -74,7 +75,7 @@ public class TransportClientFactorySuite {
 
         Map<String, String> configMap = new HashMap<>();
         configMap.put("spark.shuffle.io.numConnectionsPerPeer", Integer.toString(maxConnections));
-        TransportConf conf = new TransportConf("shuffle", new MapConfigProvider(configMap));
+        TransportConf conf = new TransportConf("shuffle",new ServiceConf());
 
         RpcHandler rpcHandler = new NoOpRpcHandler();
         TransportContext context = new TransportContext(conf, rpcHandler);
@@ -181,26 +182,9 @@ public class TransportClientFactorySuite {
 
     @Test
     public void closeIdleConnectionForRequestTimeOut() throws IOException, InterruptedException {
-        TransportConf conf = new TransportConf("shuffle", new ConfigProvider() {
-
-            @Override
-            public String get(String name) {
-                if ("spark.shuffle.io.connectionTimeout".equals(name)) {
-                    // We should make sure there is enough time for us to observe the channel is active
-                    return "1s";
-                }
-                String value = System.getProperty(name);
-                if (value == null) {
-                    throw new NoSuchElementException(name);
-                }
-                return value;
-            }
-
-            @Override
-            public Iterable<Map.Entry<String, String>> getAll() {
-                throw new UnsupportedOperationException();
-            }
-        });
+        ServiceConf sc = new ServiceConf();
+        sc.setConnectionTimeout("1s");
+        TransportConf conf = new TransportConf("shuffle", sc);
         TransportContext context = new TransportContext(conf, new NoOpRpcHandler(), true);
         try (TransportClientFactory factory = context.createClientFactory()) {
             TransportClient c1 = factory.createClient(TestUtils.getLocalHost(), server1.getPort());

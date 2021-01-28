@@ -53,7 +53,7 @@ public class GenericBlockManagerMonitor implements BlockManagerMonitor {
     private final Histogram readThroughRequestSize;
     private final Histogram readThroughSegmentSize;
 
-    public GenericBlockManagerMonitor(MetricRegistry registry, int histogramWindowSize) {
+    public GenericBlockManagerMonitor(MetricRegistry registry, long histogramWindowSize) {
         this.registry = registry;
         // number of stats since last report
         registry.register("shuffleRequestNum", (Gauge<Long>) () -> requestCount.sumThenReset());
@@ -77,16 +77,16 @@ public class GenericBlockManagerMonitor implements BlockManagerMonitor {
 
         segmentReadUsageAtEviction = registry.register("segmentUsageAtEviction",
                 new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.MINUTES)));
+                        histogramWindowSize, TimeUnit.SECONDS)));
         readCachedSize = registry.register("readCachedSize",
                 new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.MINUTES)));
+                        histogramWindowSize, TimeUnit.SECONDS)));
         readThroughRequestSize = registry.register("readThroughRequestSize",
                 new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.MINUTES)));
+                        histogramWindowSize, TimeUnit.SECONDS)));
         readThroughSegmentSize = registry.register("readThroughSegmentSize",
                 new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.MINUTES)));
+                        histogramWindowSize, TimeUnit.SECONDS)));
     }
 
     @Override

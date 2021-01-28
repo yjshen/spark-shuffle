@@ -32,7 +32,7 @@ import org.apache.spark.network.client.TransportClientFactory;
 import org.apache.spark.network.server.RpcHandler;
 import org.apache.spark.network.server.StreamManager;
 import org.apache.spark.network.server.TransportServer;
-import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -86,7 +86,7 @@ public class ChunkFetchIntegrationSuite {
             Closeables.close(fp, shouldSuppressIOException);
         }
 
-        final TransportConf conf = new TransportConf("shuffle", MapConfigProvider.EMPTY);
+        final TransportConf conf = new TransportConf("shuffle", new ServiceConf());
         fileChunk = new FileSegmentManagedBuffer(conf, testFile, 10, testFile.length() - 25);
 
         streamManager = new StreamManager() {

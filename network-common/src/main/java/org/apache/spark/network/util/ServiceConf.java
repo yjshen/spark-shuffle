@@ -4,36 +4,166 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 
 public class ServiceConf {
     private static Logger logger = LoggerFactory.getLogger(ServiceConf.class);
 
-    private int port;
-    private int thread;
-    private boolean authenticate;
-    private boolean directMemory;
+    private int port = 9999;
+    private int serverThreads = 156;
+    private String mode = "NIO";
+    private boolean directMemory = true;
+    private String connectionTimeout = "2min";
+    private int numConnectionsPerPeer = 1;
+    private int backLog = -1;
+    private int clientThreads = 0;
+    private String memoryMapThreshold = "2m";
+    private long maxChunksBeingTransferred = Long.MAX_VALUE;
+    private int receiveBuffer = -1;
+    private int sendBuffer = -1;
+    private int maxRetries = 3;
+    private String retryWait = "5s";
+    private boolean lazyFD = true;
+    private boolean enableVerboseMetrics = false;
+
     private ZKConf zookeeper;
     private CacheConf cache;
     private MetricsConf metrics;
-
-    public ServiceConf() {}
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
             .add("port", port)
-            .add("thread", thread)
-            .add("authenticate", authenticate)
-            .add("directMemory", directMemory)
             .add("zookeeper", zookeeper)
             .add("cache", cache)
             .add("metrics", metrics)
+            .add("serverThreads", serverThreads)
+            .add("mode", mode)
+            .add("directMemory", directMemory)
+            .add("connectionTimeout", connectionTimeout)
+            .add("numConnectionsPerPeer", numConnectionsPerPeer)
+            .add("backLog", backLog)
+            .add("clientThreads", clientThreads)
+            .add("memoryMapThreshold", memoryMapThreshold)
+            .add("maxChunksBeingTransferred", maxChunksBeingTransferred)
+            .add("receiveBuffer", receiveBuffer)
+            .add("sendBuffer", sendBuffer)
+            .add("maxRetries", maxRetries)
+            .add("retryWait", retryWait)
+            .add("lazyFD", lazyFD)
+            .add("enableVerboseMetrics", enableVerboseMetrics)
             .toString();
+    }
+
+    public ServiceConf() {}
+
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
+    public int getConnectionTimeoutMs() {
+        return Ints.checkedCast(JavaUtils.timeStringAsMs(connectionTimeout));
+    }
+
+    public void setConnectionTimeout(String connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+    }
+
+    public int getNumConnectionsPerPeer() {
+        return numConnectionsPerPeer;
+    }
+
+    public void setNumConnectionsPerPeer(int numConnectionsPerPeer) {
+        this.numConnectionsPerPeer = numConnectionsPerPeer;
+    }
+
+    public int getClientThreads() {
+        return clientThreads;
+    }
+
+    public void setClientThreads(int clientThreads) {
+        this.clientThreads = clientThreads;
+    }
+
+    public int getReceiveBuffer() {
+        return receiveBuffer;
+    }
+
+    public void setReceiveBuffer(int receiveBuffer) {
+        this.receiveBuffer = receiveBuffer;
+    }
+
+    public int getSendBuffer() {
+        return sendBuffer;
+    }
+
+    public void setSendBuffer(int sendBuffer) {
+        this.sendBuffer = sendBuffer;
+    }
+
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
+    public void setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+    }
+
+    public int getRetryWaitMs() {
+        return Ints.checkedCast(JavaUtils.timeStringAsMs(retryWait));
+    }
+
+    public void setRetryWait(String retryWait) {
+        this.retryWait = retryWait;
+    }
+
+    public boolean isLazyFD() {
+        return lazyFD;
+    }
+
+    public void setLazyFD(boolean lazyFD) {
+        this.lazyFD = lazyFD;
+    }
+
+    public boolean isEnableVerboseMetrics() {
+        return enableVerboseMetrics;
+    }
+
+    public void setEnableVerboseMetrics(boolean enableVerboseMetrics) {
+        this.enableVerboseMetrics = enableVerboseMetrics;
+    }
+
+
+    public long getMaxChunksBeingTransferred() {
+        return maxChunksBeingTransferred;
+    }
+
+    public void setMaxChunksBeingTransferred(long maxChunksBeingTransferred) {
+        this.maxChunksBeingTransferred = maxChunksBeingTransferred;
+    }
+
+    public int getMemoryMapThresholdBytes() {
+        return Ints.checkedCast(JavaUtils.byteStringAsBytes(memoryMapThreshold));
+    }
+
+    public void setMemoryMapThreshold(String memoryMapThreshold) {
+        this.memoryMapThreshold = memoryMapThreshold;
+    }
+
+    public int getBackLog() {
+        return backLog;
+    }
+
+    public void setBackLog(int backLog) {
+        this.backLog = backLog;
     }
 
     public int getPort() {
@@ -44,23 +174,15 @@ public class ServiceConf {
         this.port = port;
     }
 
-    public int getThread() {
-        return thread;
+    public int getServerThreads() {
+        return serverThreads;
     }
 
-    public void setThread(int thread) {
-        this.thread = thread;
+    public void setServerThreads(int serverThreads) {
+        this.serverThreads = serverThreads;
     }
 
-    public boolean isAuthenticate() {
-        return authenticate;
-    }
-
-    public void setAuthenticate(boolean authenticate) {
-        this.authenticate = authenticate;
-    }
-
-    public boolean isDirectMemory() {
+    public boolean preferDirectMemory() {
         return directMemory;
     }
 
@@ -93,8 +215,8 @@ public class ServiceConf {
     }
 
     public static class ZKConf {
-        private String broker;
-        private int port;
+        private String broker = "w";
+        private int port = 2181;
 
         public ZKConf() {}
 
@@ -124,13 +246,13 @@ public class ServiceConf {
     }
 
     public static class CacheConf {
-        private boolean enabled;
-        private String size;
-        private boolean directMemory;
-        private String evictTime;
-        private String readThroughSize;
-        private String impl;
-        private boolean quotaEnabled;
+        private boolean enabled = true;
+        private String size = "10g";
+        private boolean directMemory = true;
+        private String evictTime = "30min";
+        private String readThroughSize = "1m";
+        private String impl = "caffeine";
+        private boolean quotaEnabled = true;
 
         public CacheConf() {}
 
@@ -191,8 +313,8 @@ public class ServiceConf {
             return JavaUtils.byteStringAsBytes(size);
         }
 
-        public Duration getEvictTime() {
-            return Duration.ofSeconds(JavaUtils.timeStringAsSec(evictTime));
+        public long getEvictTimeSec() {
+            return JavaUtils.timeStringAsSec(evictTime);
         }
 
         public long getReadThroughSize() {
@@ -205,11 +327,11 @@ public class ServiceConf {
     }
 
     public static class MetricsConf {
-        private String monitorLevel;
-        private String reportInterval;
-        private String kafkaBroker;
-        private String kafkaTopic;
-        private String histogramTimeWindow;
+        private String monitorLevel = "none";
+        private String reportInterval = "1min";
+        private String kafkaBroker = "y";
+        private String kafkaTopic = "z";
+        private String histogramTimeWindow = "1min";
 
         public MetricsConf() {}
 
@@ -281,5 +403,9 @@ public class ServiceConf {
         Preconditions.checkNotNull(conf.metrics, "Failed to parse metrics conf");
 
         return conf;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(parseConfFile("/Users/shenyijie/code/spark-shuffle/conf/core.yml"));
     }
 }

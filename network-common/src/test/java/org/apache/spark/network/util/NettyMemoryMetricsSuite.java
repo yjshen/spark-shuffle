@@ -43,9 +43,9 @@ public class NettyMemoryMetricsSuite {
     private TransportClientFactory clientFactory;
 
     private void setUp(boolean enableVerboseMetrics) {
-        HashMap<String, String> configMap = new HashMap<>();
-        configMap.put("spark.shuffle.io.enableVerboseMetrics", String.valueOf(enableVerboseMetrics));
-        conf = new TransportConf("shuffle", new MapConfigProvider(configMap));
+        ServiceConf sc = new ServiceConf();
+        sc.setEnableVerboseMetrics(enableVerboseMetrics);
+        conf = new TransportConf("shuffle", sc);
         RpcHandler rpcHandler = new NoOpRpcHandler();
         context = new TransportContext(conf, rpcHandler);
         server = context.createServer();

@@ -30,6 +30,7 @@ import org.apache.spark.network.server.RpcHandler;
 import org.apache.spark.network.server.StreamManager;
 import org.apache.spark.network.server.TransportServer;
 import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,7 +68,7 @@ public class StreamSuite {
     public static void setUp() throws Exception {
         testData = new StreamTestHelper();
 
-        final TransportConf conf = new TransportConf("shuffle", MapConfigProvider.EMPTY);
+        final TransportConf conf = new TransportConf("shuffle", new ServiceConf());
         final StreamManager streamManager = new StreamManager() {
             @Override
             public ManagedBuffer getChunk(long streamId, int chunkIndex) {

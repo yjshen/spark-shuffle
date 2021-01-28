@@ -276,7 +276,7 @@ public class YarnShuffleService {
     }
 
     // db doesn't exist in recovery path go check local dirs for it
-    String[] localDirs = _conf.getTrimmedStrings("yarn.nodemanager.local-dirs");
+    String[] localDirs = null ;//_conf.getTrimmedStrings("yarn.nodemanager.local-dirs");
     for (String dir : localDirs) {
       File f = new File(new Path(dir).toUri().getPath(), dbName);
       if (f.exists()) {
@@ -291,7 +291,7 @@ public class YarnShuffleService {
           logger.info("Moving " + copyFrom + " to: " + newLoc);
           try {
             // The move here needs to handle moving non-empty directories across NFS mounts
-            FileSystem fs = FileSystem.getLocal(_conf);
+            FileSystem fs = null; // FileSystem.getLocal(_conf);
             fs.rename(copyFrom, newLoc);
           } catch (Exception e) {
             // Fail to move recovery file to new path, just continue on with new DB location
