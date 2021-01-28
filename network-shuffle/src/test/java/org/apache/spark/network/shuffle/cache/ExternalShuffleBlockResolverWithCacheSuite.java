@@ -30,6 +30,7 @@ import com.google.common.io.CharStreams;
 import org.apache.spark.network.shuffle.TestShuffleDataContext;
 import org.apache.spark.network.shuffle.protocol.ExecutorShuffleInfo;
 import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.apache.spark.network.shuffle.ExternalShuffleBlockResolver.AppExecId;
 import org.junit.AfterClass;
@@ -46,7 +47,7 @@ public class ExternalShuffleBlockResolverWithCacheSuite {
   private static TestShuffleDataContext dataContext;
 
   private static final TransportConf conf =
-      new TransportConf("shuffle", MapConfigProvider.EMPTY);
+      new TransportConf("shuffle", ServiceConf.getServiceConf());
 
   @BeforeClass
   public static void beforeAll() throws IOException {

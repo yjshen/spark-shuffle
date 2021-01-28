@@ -71,7 +71,7 @@ public class RpcIntegrationSuite {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        conf = new TransportConf("shuffle", new ServiceConf());
+        conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
         testData = new StreamTestHelper();
         rpcHandler = new RpcHandler() {
             @Override

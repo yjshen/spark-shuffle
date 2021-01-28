@@ -27,6 +27,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import org.apache.spark.network.util.ServiceConf;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import org.mockito.stubbing.Stubber;
@@ -238,11 +239,10 @@ public class RetryingBlockFetcherSuite {
   private static void performInteractions(List<? extends Map<String, Object>> interactions,
                                           BlockFetchingListener listener)
     throws IOException, InterruptedException {
-
-    MapConfigProvider provider = new MapConfigProvider(ImmutableMap.of(
-      "spark.shuffle.io.maxRetries", "2",
-      "spark.shuffle.io.retryWait", "0"));
-    TransportConf conf = new TransportConf("shuffle", provider);
+    ServiceConf sc = ServiceConf.getServiceConf();
+    sc.setMaxRetries(2);
+    sc.setRetryWait("0s");
+    TransportConf conf = new TransportConf("shuffle", sc);
     BlockFetchStarter fetchStarter = mock(BlockFetchStarter.class);
 
     Stubber stub = null;

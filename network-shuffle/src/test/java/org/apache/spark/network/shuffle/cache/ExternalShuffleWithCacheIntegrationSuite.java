@@ -33,6 +33,7 @@ import org.apache.spark.network.shuffle.ExternalShuffleClient;
 import org.apache.spark.network.shuffle.TestShuffleDataContext;
 import org.apache.spark.network.shuffle.protocol.ExecutorShuffleInfo;
 import org.apache.spark.network.util.MapConfigProvider;
+import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -88,7 +89,7 @@ public class ExternalShuffleWithCacheIntegrationSuite {
     dataContext0.create();
     dataContext0.insertSortShuffleData(0, 0, exec0Blocks);
 
-    conf = new TransportConf("shuffle", MapConfigProvider.EMPTY);
+    conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
     handler = new ExternalShuffleBlockHandlerWithCache(conf, null, new MetricRegistry());
     TransportContext transportContext = new TransportContext(conf, handler);
     server = transportContext.createServer();
@@ -136,7 +137,7 @@ public class ExternalShuffleWithCacheIntegrationSuite {
 
     final Semaphore requestsRemaining = new Semaphore(0);
 
-    ExternalShuffleClient client = new ExternalShuffleClient(clientConf, null, false, 5000);
+    ExternalShuffleClient client = new ExternalShuffleClient(clientConf, 5000);
     client.init(APP_ID);
     client.fetchBlocks(TestUtils.getLocalHost(), port, execId, blockIds,
       new BlockFetchingListener() {
@@ -234,8 +235,9 @@ public class ExternalShuffleWithCacheIntegrationSuite {
 
   @Test
   public void testFetchNoServer() throws Exception {
-    TransportConf clientConf = new TransportConf("shuffle",
-      new MapConfigProvider(ImmutableMap.of("spark.shuffle.io.maxRetries", "0")));
+    ServiceConf sc = ServiceConf.getServiceConf();
+    sc.setMaxRetries(0);
+    TransportConf clientConf = new TransportConf("shuffle", sc);
     registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
     FetchResult execFetch = fetchBlocks("exec-0",
       new String[]{"shuffle_1_0_0", "shuffle_1_0_1"}, clientConf, 1 /* port */);
@@ -245,7 +247,7 @@ public class ExternalShuffleWithCacheIntegrationSuite {
 
   private static void registerExecutor(String executorId, ExecutorShuffleInfo executorInfo)
       throws IOException, InterruptedException {
-    ExternalShuffleClient client = new ExternalShuffleClient(conf, null, false, 5000);
+    ExternalShuffleClient client = new ExternalShuffleClient(conf, 5000);
     client.init(APP_ID);
     client.registerWithShuffleServer(TestUtils.getLocalHost(), server.getPort(),
       executorId, executorInfo);

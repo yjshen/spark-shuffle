@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Maps;
 import io.netty.buffer.Unpooled;
+import org.apache.spark.network.util.ServiceConf;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -51,7 +52,7 @@ import org.apache.spark.network.util.TransportConf;
 
 public class OneForOneBlockFetcherSuite {
 
-  private static final TransportConf conf = new TransportConf("shuffle", MapConfigProvider.EMPTY);
+  private static final TransportConf conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
 
   @Test
   public void testFetchOne() {

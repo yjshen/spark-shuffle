@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.spark.network.util.ServiceConf;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -54,10 +55,7 @@ public class CleanupNonShuffleServiceServedFilesSuite {
 
   private TransportConf getConf(boolean isFetchRddEnabled) {
     return new TransportConf(
-      "shuffle",
-      new MapConfigProvider(ImmutableMap.of(
-        Constants.SHUFFLE_SERVICE_FETCH_RDD_ENABLED,
-        Boolean.toString(isFetchRddEnabled))));
+      "shuffle", ServiceConf.getServiceConf());
   }
 
   @Test

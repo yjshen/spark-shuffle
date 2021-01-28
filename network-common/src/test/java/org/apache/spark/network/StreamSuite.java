@@ -68,7 +68,7 @@ public class StreamSuite {
     public static void setUp() throws Exception {
         testData = new StreamTestHelper();
 
-        final TransportConf conf = new TransportConf("shuffle", new ServiceConf());
+        final TransportConf conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
         final StreamManager streamManager = new StreamManager() {
             @Override
             public ManagedBuffer getChunk(long streamId, int chunkIndex) {

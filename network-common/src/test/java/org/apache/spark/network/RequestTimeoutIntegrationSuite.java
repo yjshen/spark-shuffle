@@ -60,7 +60,7 @@ public class RequestTimeoutIntegrationSuite {
 
   @Before
   public void setUp() throws Exception {
-    ServiceConf sc = new ServiceConf();
+    ServiceConf sc = ServiceConf.getServiceConf();
     sc.setConnectionTimeout("10s");
     conf = new TransportConf("shuffle", sc);
 

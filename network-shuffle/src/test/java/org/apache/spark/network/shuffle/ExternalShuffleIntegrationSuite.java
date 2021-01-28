@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.spark.network.buffer.FileSegmentManagedBuffer;
 import org.apache.spark.network.server.OneForOneStreamManager;
+import org.apache.spark.network.util.ServiceConf;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -105,9 +106,9 @@ public class ExternalShuffleIntegrationSuite {
     dataContext0.insertCachedRddData(RDD_ID, SPLIT_INDEX_VALID_BLOCK, exec0RddBlockValid);
     dataContext0.insertCachedRddData(RDD_ID, SPLIT_INDEX_VALID_BLOCK_TO_RM, exec0RddBlockToRemove);
 
-    HashMap<String, String> config = new HashMap<>();
-    config.put("spark.shuffle.io.maxRetries", "0");
-    conf = new TransportConf("shuffle", new MapConfigProvider(config));
+    ServiceConf sc = ServiceConf.getServiceConf();
+    sc.setMaxRetries(0);
+    conf = new TransportConf("shuffle", sc);
     handler = new ExternalShuffleBlockHandler(
       new OneForOneStreamManager(),
       new ExternalShuffleBlockResolver(conf, null) {
@@ -174,7 +175,7 @@ public class ExternalShuffleIntegrationSuite {
 
     final Semaphore requestsRemaining = new Semaphore(0);
 
-    ExternalShuffleClient client = new ExternalShuffleClient(clientConf, null, false, 5000);
+    ExternalShuffleClient client = new ExternalShuffleClient(clientConf, 5000);
     client.init(APP_ID);
     client.fetchBlocks(TestUtils.getLocalHost(), port, execId, blockIds,
       new BlockFetchingListener() {
@@ -269,7 +270,7 @@ public class ExternalShuffleIntegrationSuite {
     String validBlockIdToRemove = "rdd_" + RDD_ID +"_" + SPLIT_INDEX_VALID_BLOCK_TO_RM;
     String missingBlockIdToRemove = "rdd_" + RDD_ID +"_" + SPLIT_INDEX_MISSING_BLOCK_TO_RM;
 
-    try (ExternalShuffleClient client = new ExternalShuffleClient(conf, null, false, 5000)) {
+    try (ExternalShuffleClient client = new ExternalShuffleClient(conf, 5000)) {
       client.init(APP_ID);
       Future<Integer> numRemovedBlocks = client.removeBlocks(
         TestUtils.getLocalHost(),
@@ -318,8 +319,9 @@ public class ExternalShuffleIntegrationSuite {
 
   @Test
   public void testFetchNoServer() throws Exception {
-    TransportConf clientConf = new TransportConf("shuffle",
-      new MapConfigProvider(ImmutableMap.of("spark.shuffle.io.maxRetries", "0")));
+    ServiceConf sc = ServiceConf.getServiceConf();
+    sc.setMaxRetries(0);
+    TransportConf clientConf = new TransportConf("shuffle", sc);
     registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
     FetchResult execFetch = fetchBlocks("exec-0",
       new String[]{"shuffle_1_0_0", "shuffle_1_0_1"}, clientConf, 1 /* port */);
@@ -329,7 +331,7 @@ public class ExternalShuffleIntegrationSuite {
 
   private static void registerExecutor(String executorId, ExecutorShuffleInfo executorInfo)
       throws IOException, InterruptedException {
-    ExternalShuffleClient client = new ExternalShuffleClient(conf, null, false, 5000);
+    ExternalShuffleClient client = new ExternalShuffleClient(conf, 5000);
     client.init(APP_ID);
     client.registerWithShuffleServer(TestUtils.getLocalHost(), server.getPort(),
       executorId, executorInfo);

@@ -51,7 +51,7 @@ public class TransportClientFactorySuite {
 
     @Before
     public void setUp() {
-        conf = new TransportConf("shuffle", new ServiceConf());
+        conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
         RpcHandler rpcHandler = new NoOpRpcHandler();
         context = new TransportContext(conf, rpcHandler);
         server1 = context.createServer();
@@ -72,10 +72,9 @@ public class TransportClientFactorySuite {
      */
     private void testClientReuse(int maxConnections, boolean concurrent)
         throws IOException, InterruptedException {
-
-        Map<String, String> configMap = new HashMap<>();
-        configMap.put("spark.shuffle.io.numConnectionsPerPeer", Integer.toString(maxConnections));
-        TransportConf conf = new TransportConf("shuffle",new ServiceConf());
+        ServiceConf sc = ServiceConf.getServiceConf();
+        sc.setNumConnectionsPerPeer(maxConnections);
+        TransportConf conf = new TransportConf("shuffle", sc);
 
         RpcHandler rpcHandler = new NoOpRpcHandler();
         TransportContext context = new TransportContext(conf, rpcHandler);
@@ -182,7 +181,7 @@ public class TransportClientFactorySuite {
 
     @Test
     public void closeIdleConnectionForRequestTimeOut() throws IOException, InterruptedException {
-        ServiceConf sc = new ServiceConf();
+        ServiceConf sc = ServiceConf.getServiceConf();
         sc.setConnectionTimeout("1s");
         TransportConf conf = new TransportConf("shuffle", sc);
         TransportContext context = new TransportContext(conf, new NoOpRpcHandler(), true);

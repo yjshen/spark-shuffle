@@ -43,7 +43,7 @@ public class NettyMemoryMetricsSuite {
     private TransportClientFactory clientFactory;
 
     private void setUp(boolean enableVerboseMetrics) {
-        ServiceConf sc = new ServiceConf();
+        ServiceConf sc = ServiceConf.getServiceConf();
         sc.setEnableVerboseMetrics(enableVerboseMetrics);
         conf = new TransportConf("shuffle", sc);
         RpcHandler rpcHandler = new NoOpRpcHandler();

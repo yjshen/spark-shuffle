@@ -61,6 +61,14 @@ public class ServiceConf {
 
     public ServiceConf() {}
 
+    public static ServiceConf getServiceConf() {
+        ServiceConf sc = new ServiceConf();
+        sc.setZookeeper(new ZKConf());
+        sc.setCache(new CacheConf());
+        sc.setMetrics(new MetricsConf());
+        return sc;
+    }
+
     public String getMode() {
         return mode;
     }
