@@ -73,6 +73,7 @@ public class TransportClientFactory implements Closeable {
     private final NettyMemoryMetrics metrics;
     private EventLoopGroup workerGroup;
     private PooledByteBufAllocator pooledAllocator;
+
     public TransportClientFactory(
         TransportContext context,
         List<TransportClientBootstrap> clientBootstraps) {

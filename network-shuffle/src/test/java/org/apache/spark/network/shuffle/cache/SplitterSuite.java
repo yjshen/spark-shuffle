@@ -9,10 +9,10 @@ import java.util.List;
 public class SplitterSuite {
 
     void checkSplitting(
-            long[] offsets,
-            long totalSize,
-            long targetSize,
-            int[] expectedSegmentStartIndices) {
+        long[] offsets,
+        long totalSize,
+        long targetSize,
+        int[] expectedSegmentStartIndices) {
 
         Splitter splitter = new Splitter(offsets, totalSize, targetSize);
         splitter.splitBlocksIntoSegments();
@@ -21,7 +21,7 @@ public class SplitterSuite {
 
         assertEquals(results.size(), expectedSegmentStartIndices.length + 1);
         long actualTotal = 0L;
-        for (int i = 0; i < expectedSegmentStartIndices.length; i ++) {
+        for (int i = 0; i < expectedSegmentStartIndices.length; i++) {
             assertEquals(results.get(i).getStartPartitionId(), expectedSegmentStartIndices[i]);
             actualTotal += results.get(i).getLength();
         }

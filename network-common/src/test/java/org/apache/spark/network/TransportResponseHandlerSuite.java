@@ -17,16 +17,15 @@
 
 package org.apache.spark.network;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import io.netty.channel.Channel;
 import io.netty.channel.local.LocalChannel;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
-
 import org.apache.spark.network.buffer.NioManagedBuffer;
 import org.apache.spark.network.client.ChunkReceivedCallback;
 import org.apache.spark.network.client.RpcResponseCallback;
@@ -40,6 +39,9 @@ import org.apache.spark.network.protocol.StreamChunkId;
 import org.apache.spark.network.protocol.StreamFailure;
 import org.apache.spark.network.protocol.StreamResponse;
 import org.apache.spark.network.util.TransportFrameDecoder;
+import org.junit.Test;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class TransportResponseHandlerSuite {
     @Test

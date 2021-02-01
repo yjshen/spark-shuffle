@@ -21,6 +21,41 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.spark.network.shuffle.cache.ShuffleSegment;
 
 public interface BlockManagerMonitor {
+    BlockManagerMonitor DUMMY_MONITOR = new BlockManagerMonitor() {
+        @Override
+        public MetricRegistry getRegistry() {
+            return null;
+        }
+
+        @Override
+        public void applicationRemoved(String appId) {
+        }
+
+        @Override
+        public void readRequest(String appId, long size) {
+        }
+
+        @Override
+        public void readThroughRequest(String appId, long size) {
+        }
+
+        @Override
+        public void readThroughFromSegment(String appId, long size) {
+        }
+
+        @Override
+        public void readCachedFromSegment(String appId, long size) {
+        }
+
+        @Override
+        public void segmentLoaded(ShuffleSegment segment) {
+        }
+
+        @Override
+        public void segmentEvicted(ShuffleSegment segment) {
+        }
+    };
+
     MetricRegistry getRegistry();
 
     void applicationRemoved(String appId);
@@ -36,33 +71,4 @@ public interface BlockManagerMonitor {
     void segmentLoaded(ShuffleSegment segment);
 
     void segmentEvicted(ShuffleSegment segment);
-
-    BlockManagerMonitor DUMMY_MONITOR = new BlockManagerMonitor() {
-        @Override
-        public MetricRegistry getRegistry() {
-            return null;
-        }
-
-        @Override
-        public void applicationRemoved(String appId) { }
-
-        @Override
-        public void readRequest(String appId, long size) { }
-
-        @Override
-        public void readThroughRequest(String appId, long size) { }
-
-        @Override
-        public void readThroughFromSegment(String appId, long size) { }
-
-        @Override
-        public void readCachedFromSegment(String appId, long size) { }
-
-        @Override
-        public void segmentLoaded(ShuffleSegment segment) { }
-
-        @Override
-        public void segmentEvicted(ShuffleSegment segment) {
-        }
-    };
 }

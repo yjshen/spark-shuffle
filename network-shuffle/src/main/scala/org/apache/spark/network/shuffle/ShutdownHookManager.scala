@@ -15,40 +15,35 @@
  * limitations under the License.
  */
 
-package com.kwai
+package org.apache.spark.network.shuffle
+
+import org.apache.hadoop.fs.FileSystem
 
 import java.io.File
 import java.util.PriorityQueue
-
 import scala.util.Try
-
-import org.apache.hadoop.fs.FileSystem
 
 /**
  * Various utility methods used by Spark.
  */
-private[spark] object ShutdownHookManager extends Logging {
+object ShutdownHookManager extends Logging {
+  private lazy val shutdownHooks = {
+    val manager = new SparkShutdownHookManager()
+    manager.install()
+    manager
+  }
   val DEFAULT_SHUTDOWN_PRIORITY = 100
-
   /**
    * The shutdown priority of the SparkContext instance. This is lower than the default
    * priority, so that by default hooks are run before the context is shut down.
    */
   val SPARK_CONTEXT_SHUTDOWN_PRIORITY = 50
-
   /**
    * The shutdown priority of temp directory must be lower than the SparkContext shutdown
    * priority. Otherwise cleaning the temp directories while Spark jobs are running can
    * throw undesirable errors at the time of shutdown.
    */
   val TEMP_DIR_SHUTDOWN_PRIORITY = 25
-
-  private lazy val shutdownHooks = {
-    val manager = new SparkShutdownHookManager()
-    manager.install()
-    manager
-  }
-
   private val shutdownDeletePaths = new scala.collection.mutable.HashSet[String]()
 
   // Add a shutdown hook to delete the temp dirs when the JVM exits
@@ -163,7 +158,7 @@ private[spark] object ShutdownHookManager extends Logging {
 
 }
 
-private [util] class SparkShutdownHookManager {
+private[spark] class SparkShutdownHookManager {
 
   private val hooks = new PriorityQueue[SparkShutdownHook]()
   @volatile private var shuttingDown = false
@@ -182,7 +177,11 @@ private [util] class SparkShutdownHookManager {
   def runAll(): Unit = {
     shuttingDown = true
     var nextHook: SparkShutdownHook = null
-    while ({ nextHook = hooks.synchronized { hooks.poll() }; nextHook != null }) {
+    while ( {
+      nextHook = hooks.synchronized {
+        hooks.poll()
+      }; nextHook != null
+    }) {
       Try(Utils.logUncaughtExceptions(nextHook.run()))
     }
   }
@@ -199,7 +198,9 @@ private [util] class SparkShutdownHookManager {
   }
 
   def remove(ref: AnyRef): Boolean = {
-    hooks.synchronized { hooks.remove(ref) }
+    hooks.synchronized {
+      hooks.remove(ref)
+    }
   }
 
 }

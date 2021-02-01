@@ -21,20 +21,20 @@ package org.apache.spark.network.shuffle;
  * Contains offset and length of the shuffle block data.
  */
 public class ShuffleIndexRecord {
-  private final long offset;
-  private final long length;
+    private final long offset;
+    private final long length;
 
-  public ShuffleIndexRecord(long offset, long length) {
-    this.offset = offset;
-    this.length = length;
-  }
+    public ShuffleIndexRecord(long offset, long length) {
+        this.offset = offset;
+        this.length = length;
+    }
 
-  public long getOffset() {
-    return offset;
-  }
+    public long getOffset() {
+        return offset;
+    }
 
-  public long getLength() {
-    return length;
-  }
+    public long getLength() {
+        return length;
+    }
 }
 

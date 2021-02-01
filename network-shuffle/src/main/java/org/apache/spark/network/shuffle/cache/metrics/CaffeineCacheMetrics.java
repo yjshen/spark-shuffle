@@ -18,9 +18,6 @@
 package org.apache.spark.network.shuffle.cache.metrics;
 
 import static java.util.Objects.requireNonNull;
-
-import java.util.concurrent.atomic.LongAdder;
-
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -29,6 +26,7 @@ import com.github.benmanes.caffeine.cache.stats.StatsCounter;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * A {@link StatsCounter} instrumented with Dropwizard Metrics.
@@ -43,17 +41,17 @@ public final class CaffeineCacheMetrics implements StatsCounter {
     /**
      * Constructs an instance for use by a single cache.
      *
-     * @param registry the registry of metric instances
+     * @param registry      the registry of metric instances
      * @param metricsPrefix the prefix name for the metrics
      */
     public CaffeineCacheMetrics(MetricRegistry registry, String metricsPrefix) {
         requireNonNull(metricsPrefix);
         registry.register(MetricRegistry.name(metricsPrefix, "hits"),
-                (Gauge<Long>) () -> hitCount.sumThenReset());
+            (Gauge<Long>) () -> hitCount.sumThenReset());
         registry.register(MetricRegistry.name(metricsPrefix, "loadsSuccess"),
-                (Gauge<Long>) () -> loadSuccess.sumThenReset());
+            (Gauge<Long>) () -> loadSuccess.sumThenReset());
         registry.register(MetricRegistry.name(metricsPrefix, "loadsFailure"),
-                (Gauge<Long>) () -> loadFailure.sumThenReset());
+            (Gauge<Long>) () -> loadFailure.sumThenReset());
     }
 
     @Override
@@ -62,7 +60,8 @@ public final class CaffeineCacheMetrics implements StatsCounter {
     }
 
     @Override
-    public void recordMisses(int count) { }
+    public void recordMisses(int count) {
+    }
 
     @Override
     public void recordLoadSuccess(long loadTime) {
@@ -91,7 +90,7 @@ public final class CaffeineCacheMetrics implements StatsCounter {
     // we don't need this in kafka report
     @Override
     public CacheStats snapshot() {
-        return new CacheStats(0L, 0L, 0L, 0L,0L, 0L,0L);
+        return new CacheStats(0L, 0L, 0L, 0L, 0L, 0L, 0L);
     }
 
     @Override

@@ -18,7 +18,6 @@
 package org.apache.spark.network.shuffle.cache;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
 import com.carrotsearch.hppc.IntHashSet;
 import com.google.common.base.Objects;
 import com.google.common.collect.ContiguousSet;
@@ -29,21 +28,8 @@ import java.util.concurrent.locks.StampedLock;
 
 public class ShuffleSegment {
 
-    public enum CacheState {
-        READ_THROUGH(0), CACHABLE(1), CACHING(2), CACHED(3), EVICTED(4);
-
-        private final byte id;
-
-        CacheState(int id) {
-            checkArgument(id < 128, "Cannot have more than 128 message types");
-            this.id = (byte) id;
-        }
-
-        public byte id() {
-            return id;
-        }
-    }
-
+    public static final ShuffleSegment DUMMY_SEGMENT =
+        new ShuffleSegment("", null, null, 0, 1, -1, -1, null);
     private final String appId;
     private final File indexFile;
     private final File dataFile;
@@ -54,27 +40,21 @@ public class ShuffleSegment {
 
     private final long offset;
     private final long length;
-
-    private CacheState cacheState;
     private final IntHashSet unTouchedPartitions;
-
     private final StampedLock lock;
-
+    private CacheState cacheState;
     private long loadTime = -1;
     private long lastTouchedTime = -1;
 
-    public static final ShuffleSegment DUMMY_SEGMENT =
-        new ShuffleSegment("", null, null, 0, 1, -1, -1, null);
-
     public ShuffleSegment(
-            String appId,
-            File indexFile,
-            File dataFile,
-            int startPartitionId,
-            int numPartitions,
-            long offset,
-            long length,
-            IntHashSet allNonEmptyPartitions) {
+        String appId,
+        File indexFile,
+        File dataFile,
+        int startPartitionId,
+        int numPartitions,
+        long offset,
+        long length,
+        IntHashSet allNonEmptyPartitions) {
         checkArgument(startPartitionId >= 0, "Start block idx cannot be negative for shuffle segment");
         checkArgument(numPartitions > 0, "Num of blocks cannot be negative or zero for shuffle segment");
 
@@ -95,6 +75,31 @@ public class ShuffleSegment {
         } else {
             this.cacheState = CacheState.READ_THROUGH;
         }
+    }
+
+    /**
+     * Convert a quantity in bytes to a human-readable string such as "4.0 MB".
+     */
+    private static String bytesToString(long size) {
+        long GB = 1 << 30;
+        long MB = 1 << 20;
+        long KB = 1 << 10;
+        double value;
+        String unit;
+        if (size >= 2 * GB) {
+            value = (double) size / GB;
+            unit = "GB";
+        } else if (size >= 2 * MB) {
+            value = (double) size / MB;
+            unit = "MB";
+        } else if (size >= 2 * KB) {
+            value = (double) size / KB;
+            unit = "KB";
+        } else {
+            value = size;
+            unit = "B";
+        }
+        return String.format("%.1f %s", value, unit);
     }
 
     @Override
@@ -187,7 +192,7 @@ public class ShuffleSegment {
         if (cacheState == CacheState.CACHED && partitionRange.isConnected(parts)) {
             Range<Integer> containedRange = partitionRange.intersection(parts);
             synchronized (this) {
-                for(int partitionId : ContiguousSet.create(containedRange, DiscreteDomain.integers())) {
+                for (int partitionId : ContiguousSet.create(containedRange, DiscreteDomain.integers())) {
                     unTouchedPartitions.remove(partitionId);
                 }
                 lastTouchedTime = System.currentTimeMillis();
@@ -197,31 +202,6 @@ public class ShuffleSegment {
 
     public boolean isFullyRead() {
         return unTouchedPartitions.isEmpty();
-    }
-
-    /**
-     * Convert a quantity in bytes to a human-readable string such as "4.0 MB".
-     */
-    private static String bytesToString(long size) {
-        long GB = 1 << 30;
-        long MB = 1 << 20;
-        long KB = 1 << 10;
-        double value;
-        String unit;
-        if (size >= 2 * GB) {
-            value = (double) size / GB;
-            unit = "GB";
-        } else if (size >= 2 * MB) {
-            value = (double) size / MB;
-            unit = "MB";
-        } else if (size >= 2 * KB) {
-            value = (double) size / KB;
-            unit = "KB";
-        } else {
-            value = size;
-            unit = "B";
-        }
-        return String.format("%.1f %s", value, unit);
     }
 
     public void loadedIntoCache() {
@@ -234,6 +214,21 @@ public class ShuffleSegment {
 
     public long timeSinceLastTouched() {
         return (System.currentTimeMillis() - lastTouchedTime) / 1000;
+    }
+
+    public enum CacheState {
+        READ_THROUGH(0), CACHABLE(1), CACHING(2), CACHED(3), EVICTED(4);
+
+        private final byte id;
+
+        CacheState(int id) {
+            checkArgument(id < 128, "Cannot have more than 128 message types");
+            this.id = (byte) id;
+        }
+
+        public byte id() {
+            return id;
+        }
     }
 
 }

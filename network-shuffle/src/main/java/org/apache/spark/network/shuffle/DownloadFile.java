@@ -26,22 +26,22 @@ import java.io.IOException;
  * which ensures data is not read until after the writer is closed.
  */
 public interface DownloadFile {
-  /**
-   * Delete the file.
-   *
-   * @return  <code>true</code> if and only if the file or directory is
-   *          successfully deleted; <code>false</code> otherwise
-   */
-  boolean delete();
+    /**
+     * Delete the file.
+     *
+     * @return <code>true</code> if and only if the file or directory is
+     * successfully deleted; <code>false</code> otherwise
+     */
+    boolean delete();
 
-  /**
-   * A channel for writing data to the file.  This special channel allows access to the data for
-   * reading, after the channel is closed, via {@link DownloadFileWritableChannel#closeAndRead()}.
-   */
-  DownloadFileWritableChannel openForWriting() throws IOException;
+    /**
+     * A channel for writing data to the file.  This special channel allows access to the data for
+     * reading, after the channel is closed, via {@link DownloadFileWritableChannel#closeAndRead()}.
+     */
+    DownloadFileWritableChannel openForWriting() throws IOException;
 
-  /**
-   * The path of the file, intended only for debug purposes.
-   */
-  String path();
+    /**
+     * The path of the file, intended only for debug purposes.
+     */
+    String path();
 }

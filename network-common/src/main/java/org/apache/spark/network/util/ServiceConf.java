@@ -7,8 +7,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class ServiceConf {
     private static Logger logger = LoggerFactory.getLogger(ServiceConf.class);
@@ -29,10 +29,40 @@ public class ServiceConf {
     private String retryWait = "5s";
     private boolean lazyFD = true;
     private boolean enableVerboseMetrics = false;
+    private String spark3ExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle";
+    private String sparkaeExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle";
 
     private ZKConf zookeeper;
     private CacheConf cache;
     private MetricsConf metrics;
+
+    public ServiceConf() {
+    }
+
+    public static ServiceConf getServiceConf() {
+        ServiceConf sc = new ServiceConf();
+        sc.setZookeeper(new ZKConf());
+        sc.setCache(new CacheConf());
+        sc.setMetrics(new MetricsConf());
+        return sc;
+    }
+
+    public static ServiceConf parseConfFile(InputStream stream) {
+        ServiceConf conf = null;
+        try {
+            ObjectMapper om = new ObjectMapper(new YAMLFactory());
+            conf = om.readValue(stream, ServiceConf.class);
+        } catch (IOException e) {
+            logger.error("Failed to parse stream of core.yml due to: ", e);
+        }
+
+        Preconditions.checkNotNull(conf, "Failed to parse conf");
+        Preconditions.checkNotNull(conf.zookeeper, "Failed to parse zookeeper conf");
+        Preconditions.checkNotNull(conf.cache, "Failed to parse cache conf");
+        Preconditions.checkNotNull(conf.metrics, "Failed to parse metrics conf");
+
+        return conf;
+    }
 
     @Override
     public String toString() {
@@ -56,17 +86,9 @@ public class ServiceConf {
             .add("retryWait", retryWait)
             .add("lazyFD", lazyFD)
             .add("enableVerboseMetrics", enableVerboseMetrics)
+            .add("aePath", sparkaeExecutorPath)
+            .add("3path", spark3ExecutorPath)
             .toString();
-    }
-
-    public ServiceConf() {}
-
-    public static ServiceConf getServiceConf() {
-        ServiceConf sc = new ServiceConf();
-        sc.setZookeeper(new ZKConf());
-        sc.setCache(new CacheConf());
-        sc.setMetrics(new MetricsConf());
-        return sc;
     }
 
     public String getMode() {
@@ -149,7 +171,6 @@ public class ServiceConf {
         this.enableVerboseMetrics = enableVerboseMetrics;
     }
 
-
     public long getMaxChunksBeingTransferred() {
         return maxChunksBeingTransferred;
     }
@@ -164,6 +185,22 @@ public class ServiceConf {
 
     public void setMemoryMapThreshold(String memoryMapThreshold) {
         this.memoryMapThreshold = memoryMapThreshold;
+    }
+
+    public String getSpark3ExecutorPath() {
+        return spark3ExecutorPath;
+    }
+
+    public void setSpark3ExecutorPath(String spark3ExecutorPath) {
+        this.spark3ExecutorPath = spark3ExecutorPath;
+    }
+
+    public String getSparkaeExecutorPath() {
+        return sparkaeExecutorPath;
+    }
+
+    public void setSparkaeExecutorPath(String sparkaeExecutorPath) {
+        this.sparkaeExecutorPath = sparkaeExecutorPath;
     }
 
     public int getBackLog() {
@@ -223,10 +260,11 @@ public class ServiceConf {
     }
 
     public static class ZKConf {
-        private String broker = "w";
+        private String broker = "localhost";
         private int port = 2181;
 
-        public ZKConf() {}
+        public ZKConf() {
+        }
 
         public String getBroker() {
             return broker;
@@ -242,6 +280,10 @@ public class ServiceConf {
 
         public void setPort(int port) {
             this.port = port;
+        }
+
+        public String getHostPort() {
+            return broker + ":" + port;
         }
 
         @Override
@@ -262,7 +304,8 @@ public class ServiceConf {
         private String impl = "caffeine";
         private boolean quotaEnabled = true;
 
-        public CacheConf() {}
+        public CacheConf() {
+        }
 
         @Override
         public String toString() {
@@ -285,10 +328,6 @@ public class ServiceConf {
             this.enabled = enabled;
         }
 
-        public void setSize(String size) {
-            this.size = size;
-        }
-
         public boolean isDirectMemory() {
             return directMemory;
         }
@@ -299,14 +338,6 @@ public class ServiceConf {
 
         public void setEvictTime(String evictTime) {
             this.evictTime = evictTime;
-        }
-
-        public void setReadThroughSize(String readThroughSize) {
-            this.readThroughSize = readThroughSize;
-        }
-
-        public void setImpl(String impl) {
-            this.impl = impl;
         }
 
         public boolean isQuotaEnabled() {
@@ -321,6 +352,10 @@ public class ServiceConf {
             return JavaUtils.byteStringAsBytes(size);
         }
 
+        public void setSize(String size) {
+            this.size = size;
+        }
+
         public long getEvictTimeSec() {
             return JavaUtils.timeStringAsSec(evictTime);
         }
@@ -329,8 +364,16 @@ public class ServiceConf {
             return JavaUtils.byteStringAsBytes(readThroughSize);
         }
 
+        public void setReadThroughSize(String readThroughSize) {
+            this.readThroughSize = readThroughSize;
+        }
+
         public String getImpl() {
             return impl;
+        }
+
+        public void setImpl(String impl) {
+            this.impl = impl;
         }
     }
 
@@ -341,7 +384,8 @@ public class ServiceConf {
         private String kafkaTopic = "z";
         private String histogramTimeWindow = "1min";
 
-        public MetricsConf() {}
+        public MetricsConf() {
+        }
 
         @Override
         public String toString() {
@@ -393,27 +437,5 @@ public class ServiceConf {
         public void setHistogramTimeWindow(String histogramTimeWindow) {
             this.histogramTimeWindow = histogramTimeWindow;
         }
-    }
-
-    public static ServiceConf parseConfFile(String confFile) {
-        ServiceConf conf = null;
-        try {
-            File file = new File(confFile);
-            ObjectMapper om = new ObjectMapper(new YAMLFactory());
-            conf = om.readValue(file, ServiceConf.class);
-        } catch (IOException e) {
-            logger.error("Failed to parse core.yml due to: ", e);
-        }
-
-        Preconditions.checkNotNull(conf, "Failed to parse conf");
-        Preconditions.checkNotNull(conf.zookeeper, "Failed to parse zookeeper conf");
-        Preconditions.checkNotNull(conf.cache, "Failed to parse cache conf");
-        Preconditions.checkNotNull(conf.metrics, "Failed to parse metrics conf");
-
-        return conf;
-    }
-
-    public static void main(String[] args) {
-        System.out.println(parseConfFile("/Users/shenyijie/code/spark-shuffle/conf/core.yml"));
     }
 }

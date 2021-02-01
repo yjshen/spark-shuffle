@@ -25,12 +25,14 @@ import org.apache.spark.network.util.TransportConf;
  */
 public interface DownloadFileManager {
 
-  /** Create a temp block file. */
-  DownloadFile createTempFile(TransportConf transportConf);
+    /**
+     * Create a temp block file.
+     */
+    DownloadFile createTempFile(TransportConf transportConf);
 
-  /**
-   * Register a temp file to clean up when it won't be used any more. Return whether the
-   * file is registered successfully. If `false`, the caller should clean up the file by itself.
-   */
-  boolean registerTempFileToClean(DownloadFile file);
+    /**
+     * Register a temp file to clean up when it won't be used any more. Return whether the
+     * file is registered successfully. If `false`, the caller should clean up the file by itself.
+     */
+    boolean registerTempFileToClean(DownloadFile file);
 }

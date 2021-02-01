@@ -39,10 +39,10 @@ public class SegmentCacheGuava extends ShuffleSegmentCache {
     private final LoadingCache<ShuffleSegment, ByteBuf> shuffleSegmentCache;
 
     public SegmentCacheGuava(
-            long cacheCapacity,
-            MetricRegistry registry,
-            BlockManagerMonitor monitor,
-            TransportConf conf) {
+        long cacheCapacity,
+        MetricRegistry registry,
+        BlockManagerMonitor monitor,
+        TransportConf conf) {
         super(cacheCapacity, monitor, conf);
 
         CacheLoader<ShuffleSegment, ByteBuf> shuffleCacheLoader =
@@ -96,7 +96,7 @@ public class SegmentCacheGuava extends ShuffleSegmentCache {
         }
 
         registry.registerAll(
-                GuavaCacheMetrics.metricsFor("guava", shuffleSegmentCache));
+            GuavaCacheMetrics.metricsFor("guava", shuffleSegmentCache));
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.kwai
+package org.apache.spark.network.shuffle
 
 import org.apache.commons.lang3.SystemUtils
 import org.apache.spark.network.util.JavaUtils
@@ -13,7 +13,11 @@ import scala.util.control.ControlThrowable
 
 object Utils extends Logging {
 
-  def getSparkClassLoader: ClassLoader = getClass.getClassLoader
+  /** Preferred alternative to Class.forName(className) */
+  def classForName(className: String): Class[_] = {
+    Class.forName(className, true, getContextOrSparkClassLoader)
+    // scalastyle:on classforname
+  }
 
   /**
    * Get the Context ClassLoader on this thread or, if not present, the ClassLoader that
@@ -26,19 +30,8 @@ object Utils extends Logging {
     Option(Thread.currentThread().getContextClassLoader).getOrElse(getSparkClassLoader)
 
   // scalastyle:off classforname
-  /** Preferred alternative to Class.forName(className) */
-  def classForName(className: String): Class[_] = {
-    Class.forName(className, true, getContextOrSparkClassLoader)
-    // scalastyle:on classforname
-  }
 
-  /**
-   * Returns the name of this JVM process. This is OS dependent but typically (OSX, Linux, Windows),
-   * this is formatted as PID@hostname.
-   */
-  def getProcessName(): String = {
-    ManagementFactory.getRuntimeMXBean().getName()
-  }
+  def getSparkClassLoader: ClassLoader = getClass.getClassLoader
 
   /**
    * Utility function that should be called early in `main()` for daemons to set up some common
@@ -47,6 +40,14 @@ object Utils extends Logging {
   def initDaemon(log: Logger): Unit = {
     log.info(s"Started daemon with process name: ${Utils.getProcessName()}")
     SignalUtils.registerLogger(log)
+  }
+
+  /**
+   * Returns the name of this JVM process. This is OS dependent but typically (OSX, Linux, Windows),
+   * this is formatted as PID@hostname.
+   */
+  def getProcessName(): String = {
+    ManagementFactory.getRuntimeMXBean().getName()
   }
 
   /**
@@ -81,6 +82,8 @@ object Utils extends Logging {
 
 private object SignalUtils extends Logging {
 
+  /** Mapping from signal to their respective handlers. */
+  private val handlers = new scala.collection.mutable.HashMap[String, ActionHandler]
   /** A flag to make sure we only register the logger once. */
   private var loggerRegistered = false
 
@@ -156,12 +159,10 @@ private object SignalUtils extends Logging {
 
     /**
      * Adds an action to be run by this handler.
+     *
      * @param action An action to be run when a signal is received. Return true if the signal
      *               should be stopped with this handler, false if it should be escalated.
      */
     def register(action: => Boolean): Unit = actions.add(() => action)
   }
-
-  /** Mapping from signal to their respective handlers. */
-  private val handlers = new scala.collection.mutable.HashMap[String, ActionHandler]
 }

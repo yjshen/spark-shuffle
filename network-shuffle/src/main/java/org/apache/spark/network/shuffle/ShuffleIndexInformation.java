@@ -29,47 +29,50 @@ import java.nio.file.Files;
  * as an in-memory LongBuffer.
  */
 public class ShuffleIndexInformation {
-  /** offsets as long buffer */
-  private final LongBuffer offsets;
-  private int size;
+    /**
+     * offsets as long buffer
+     */
+    private final LongBuffer offsets;
+    private int size;
 
-  public ShuffleIndexInformation(File indexFile) throws IOException {
-    size = (int)indexFile.length();
-    ByteBuffer buffer = ByteBuffer.allocate(size);
-    offsets = buffer.asLongBuffer();
-    DataInputStream dis = null;
-    try {
-      dis = new DataInputStream(Files.newInputStream(indexFile.toPath()));
-      dis.readFully(buffer.array());
-    } finally {
-      if (dis != null) {
-        dis.close();
-      }
+    public ShuffleIndexInformation(File indexFile) throws IOException {
+        size = (int) indexFile.length();
+        ByteBuffer buffer = ByteBuffer.allocate(size);
+        offsets = buffer.asLongBuffer();
+        DataInputStream dis = null;
+        try {
+            dis = new DataInputStream(Files.newInputStream(indexFile.toPath()));
+            dis.readFully(buffer.array());
+        } finally {
+            if (dis != null) {
+                dis.close();
+            }
+        }
     }
-  }
 
-  /**
-   * Size of the index file
-   * @return size
-   */
-  public int getSize() {
-    return size;
-  }
+    /**
+     * Size of the index file
+     *
+     * @return size
+     */
+    public int getSize() {
+        return size;
+    }
 
-  /**
-   * Get index offset for a particular reducer.
-   */
-  public ShuffleIndexRecord getIndex(int reduceId, int numBlocks) {
-    long offset = offsets.get(reduceId);
-    long nextOffset = offsets.get(reduceId + numBlocks);
-    return new ShuffleIndexRecord(offset, nextOffset - offset);
-  }
+    /**
+     * Get index offset for a particular reducer.
+     */
+    public ShuffleIndexRecord getIndex(int reduceId, int numBlocks) {
+        long offset = offsets.get(reduceId);
+        long nextOffset = offsets.get(reduceId + numBlocks);
+        return new ShuffleIndexRecord(offset, nextOffset - offset);
+    }
 
-  public long[] getOffsetsArray() {
-    long[] offsetArray = new long[offsets.capacity()];
-    final int initialPos = offsets.position();
-    offsets.get(offsetArray);
-    offsets.position(initialPos);
-    return offsetArray;
-  }
+    public long[] getOffsetsArray() {
+        long[] offsetArray = new long[offsets.capacity()];
+        final int initialPos = offsets.position();
+        offsets.get(offsetArray);
+        offsets.position(initialPos);
+        return offsetArray;
+    }
 }

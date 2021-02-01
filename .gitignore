@@ -67,7 +67,6 @@ docs/.jekyll-metadata
 */*/target
 */*/*/*.bat
 sql/hive-thriftserver/target/
-resource-managers/yarn/target/
 dependency-reduced-pom.xml
 */dependency-reduced-pom.xml
 */*/dependency-reduced-pom.xml

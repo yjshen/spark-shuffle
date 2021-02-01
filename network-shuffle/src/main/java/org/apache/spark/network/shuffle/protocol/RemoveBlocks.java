@@ -20,70 +20,70 @@ package org.apache.spark.network.shuffle.protocol;
 import com.google.common.base.Objects;
 import io.netty.buffer.ByteBuf;
 import org.apache.spark.network.protocol.Encoders;
-
 import java.util.Arrays;
 
-// Needed by ScalaDoc. See SPARK-7726
-import static org.apache.spark.network.shuffle.protocol.BlockTransferMessage.Type;
-
-/** Request to remove a set of blocks. */
+/**
+ * Request to remove a set of blocks.
+ */
 public class RemoveBlocks extends BlockTransferMessage {
-  public final String appId;
-  public final String execId;
-  public final String[] blockIds;
+    public final String appId;
+    public final String execId;
+    public final String[] blockIds;
 
-  public RemoveBlocks(String appId, String execId, String[] blockIds) {
-    this.appId = appId;
-    this.execId = execId;
-    this.blockIds = blockIds;
-  }
-
-  @Override
-  protected Type type() { return Type.REMOVE_BLOCKS; }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(appId, execId) * 41 + Arrays.hashCode(blockIds);
-  }
-
-  @Override
-  public String toString() {
-    return Objects.toStringHelper(this)
-      .add("appId", appId)
-      .add("execId", execId)
-      .add("blockIds", Arrays.toString(blockIds))
-      .toString();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (other != null && other instanceof RemoveBlocks) {
-      RemoveBlocks o = (RemoveBlocks) other;
-      return Objects.equal(appId, o.appId)
-        && Objects.equal(execId, o.execId)
-        && Arrays.equals(blockIds, o.blockIds);
+    public RemoveBlocks(String appId, String execId, String[] blockIds) {
+        this.appId = appId;
+        this.execId = execId;
+        this.blockIds = blockIds;
     }
-    return false;
-  }
 
-  @Override
-  public int encodedLength() {
-    return Encoders.Strings.encodedLength(appId)
-      + Encoders.Strings.encodedLength(execId)
-      + Encoders.StringArrays.encodedLength(blockIds);
-  }
+    public static RemoveBlocks decode(ByteBuf buf) {
+        String appId = Encoders.Strings.decode(buf);
+        String execId = Encoders.Strings.decode(buf);
+        String[] blockIds = Encoders.StringArrays.decode(buf);
+        return new RemoveBlocks(appId, execId, blockIds);
+    }
 
-  @Override
-  public void encode(ByteBuf buf) {
-    Encoders.Strings.encode(buf, appId);
-    Encoders.Strings.encode(buf, execId);
-    Encoders.StringArrays.encode(buf, blockIds);
-  }
+    @Override
+    protected Type type() {
+        return Type.REMOVE_BLOCKS;
+    }
 
-  public static RemoveBlocks decode(ByteBuf buf) {
-    String appId = Encoders.Strings.decode(buf);
-    String execId = Encoders.Strings.decode(buf);
-    String[] blockIds = Encoders.StringArrays.decode(buf);
-    return new RemoveBlocks(appId, execId, blockIds);
-  }
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(appId, execId) * 41 + Arrays.hashCode(blockIds);
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+            .add("appId", appId)
+            .add("execId", execId)
+            .add("blockIds", Arrays.toString(blockIds))
+            .toString();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other != null && other instanceof RemoveBlocks) {
+            RemoveBlocks o = (RemoveBlocks) other;
+            return Objects.equal(appId, o.appId)
+                && Objects.equal(execId, o.execId)
+                && Arrays.equals(blockIds, o.blockIds);
+        }
+        return false;
+    }
+
+    @Override
+    public int encodedLength() {
+        return Encoders.Strings.encodedLength(appId)
+            + Encoders.Strings.encodedLength(execId)
+            + Encoders.StringArrays.encodedLength(blockIds);
+    }
+
+    @Override
+    public void encode(ByteBuf buf) {
+        Encoders.Strings.encode(buf, appId);
+        Encoders.Strings.encode(buf, execId);
+        Encoders.StringArrays.encode(buf, blockIds);
+    }
 }

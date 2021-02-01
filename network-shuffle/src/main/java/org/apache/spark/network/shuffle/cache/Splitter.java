@@ -17,13 +17,13 @@
 
 package org.apache.spark.network.shuffle.cache;
 
+import com.carrotsearch.hppc.IntHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import com.carrotsearch.hppc.IntHashSet;
 
 public class Splitter {
     private static final Logger logger = LoggerFactory.getLogger(Splitter.class);
@@ -72,7 +72,7 @@ public class Splitter {
             }
             i += 1;
         }
-         tryMergeBlocks();
+        tryMergeBlocks();
     }
 
     void tryMergeBlocks() {
@@ -99,7 +99,7 @@ public class Splitter {
     }
 
     public NavigableMap<Long, ShuffleSegment> getResults(
-            String appId, File indexFile, File dataFile) {
+        String appId, File indexFile, File dataFile) {
         NavigableMap<Long, ShuffleSegment> splitResults = new TreeMap<>();
         int outputSegmentsNum = segmentStartIndices.size();
         for (int i = 0; i < outputSegmentsNum; i++) {
@@ -129,13 +129,13 @@ public class Splitter {
 
     public IntHashSet getNonEmptyPartitions(int startPartitionId, int numPartitions) {
         int numNonEmptyPartitions = 0;
-        for (int i = 0; i < numPartitions; i ++) {
+        for (int i = 0; i < numPartitions; i++) {
             if (sizes[i + startPartitionId] != 0) {
                 numNonEmptyPartitions += 1;
             }
         }
         IntHashSet set = new IntHashSet(numNonEmptyPartitions);
-        for (int i = 0; i < numPartitions; i ++) {
+        for (int i = 0; i < numPartitions; i++) {
             if (sizes[i + startPartitionId] != 0) {
                 set.add(i + startPartitionId);
             }

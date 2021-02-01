@@ -47,7 +47,7 @@ public class TransportConf {
      * If true, we will prefer allocating off-heap byte buffers within Netty.
      */
     public boolean preferDirectBufs() {
-      return conf.preferDirectMemory();
+        return conf.preferDirectMemory();
     }
 
     /**
@@ -185,5 +185,9 @@ public class TransportConf {
 
     public String metricsMonitorLevel() {
         return conf.getMetrics().getMonitorLevel();
+    }
+
+    public ServiceConf getServiceConf() {
+        return conf;
     }
 }

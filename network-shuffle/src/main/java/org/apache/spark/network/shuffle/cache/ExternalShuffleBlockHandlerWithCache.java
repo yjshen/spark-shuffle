@@ -17,13 +17,7 @@
 
 package org.apache.spark.network.shuffle.cache;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
+import static org.apache.spark.network.util.NettyUtils.getRemoteAddress;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
@@ -31,19 +25,24 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.spark.network.buffer.ManagedBuffer;
 import org.apache.spark.network.client.RpcResponseCallback;
 import org.apache.spark.network.client.TransportClient;
 import org.apache.spark.network.server.OneForOneStreamManager;
 import org.apache.spark.network.server.RpcHandler;
 import org.apache.spark.network.server.StreamManager;
-import org.apache.spark.network.shuffle.ExternalShuffleBlockResolver.AppExecId;
-import org.apache.spark.network.shuffle.protocol.*;
-import static org.apache.spark.network.util.NettyUtils.getRemoteAddress;
+import org.apache.spark.network.shuffle.protocol.BlockTransferMessage;
+import org.apache.spark.network.shuffle.protocol.OpenBlocks;
+import org.apache.spark.network.shuffle.protocol.RegisterExecutor;
+import org.apache.spark.network.shuffle.protocol.StreamHandle;
 import org.apache.spark.network.util.TransportConf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * RPC Handler for a server which can serve shuffle blocks from outside of an Executor process.
@@ -63,13 +62,12 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
     private final MetricRegistry registry;
 
     public ExternalShuffleBlockHandlerWithCache(
-            TransportConf conf,
-            File registeredExecutorFile,
-            MetricRegistry registry)
+        TransportConf conf,
+        MetricRegistry registry)
         throws IOException {
         this(
             new OneForOneStreamManager(),
-            new ExternalShuffleBlockResolverWithCache(conf, registeredExecutorFile, registry),
+            new ExternalShuffleBlockResolverWithCache(conf, registry),
             registry);
     }
 
@@ -78,9 +76,9 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
      */
     @VisibleForTesting
     public ExternalShuffleBlockHandlerWithCache(
-            OneForOneStreamManager streamManager,
-            ExternalShuffleBlockResolverWithCache blockManager,
-            MetricRegistry registry) {
+        OneForOneStreamManager streamManager,
+        ExternalShuffleBlockResolverWithCache blockManager,
+        MetricRegistry registry) {
         this.metrics = new ShuffleMetrics();
         this.registry = registry;
         this.registry.registerAll(metrics);
@@ -106,6 +104,7 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
             final Timer.Context responseDelayContext = metrics.openBlockRequestLatencyMillis.time();
             try {
                 OpenBlocks msg = (OpenBlocks) msgObj;
+                blockManager.seenApp(msg.appId);
                 checkAuth(client, msg.appId);
                 long streamId = streamManager.registerStream(client.getClientId(),
                     new ManagedBufferIterator(msg.appId, msg.execId, msg.blockIds), client.getChannel());
@@ -151,27 +150,6 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
         blockManager.applicationRemoved(appId, cleanupLocalDirs);
     }
 
-    /**
-     * Clean up any non-shuffle files in any local directories associated with an finished executor.
-     */
-    public void executorRemoved(String executorId, String appId) {
-        blockManager.executorRemoved(executorId, appId);
-    }
-
-    /**
-     * Register an (application, executor) with the given shuffle info.
-     * <p>
-     * The "re-" is meant to highlight the intended use of this method -- when this service is
-     * restarted, this is used to restore the state of executors from before the restart.  Normal
-     * registration will happen via a message handled in receive()
-     *
-     * @param appExecId
-     * @param executorInfo
-     */
-    public void reregisterExecutor(AppExecId appExecId, ExecutorShuffleInfo executorInfo) {
-        blockManager.registerExecutor(appExecId.appId, appExecId.execId, executorInfo);
-    }
-
     public void close() {
         blockManager.close();
     }
@@ -181,6 +159,13 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
             throw new SecurityException(String.format(
                 "Client for %s not authorized for application %s.", client.getClientId(), appId));
         }
+    }
+
+    private boolean isShuffleBlock(String[] blockIdParts) {
+        // length == 4: ShuffleBlockId
+        // length == 5: ContinuousShuffleBlockId
+        return (blockIdParts.length == 4 || blockIdParts.length == 5) &&
+            blockIdParts[0].equals("shuffle");
     }
 
     /**
@@ -210,22 +195,14 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
         }
     }
 
-    private boolean isShuffleBlock(String[] blockIdParts) {
-        // length == 4: ShuffleBlockId
-        // length == 5: ContinuousShuffleBlockId
-        return (blockIdParts.length == 4 || blockIdParts.length == 5) &&
-            blockIdParts[0].equals("shuffle");
-    }
-
     private class ManagedBufferIterator implements Iterator<ManagedBuffer> {
 
-        private int index = 0;
         private final String appId;
         private final String execId;
         private final int shuffleId;
-
         // An array containing mapId, reduceId and numBlocks tuple
         private final int[] shuffleBlockIds;
+        private int index = 0;
 
         ManagedBufferIterator(String appId, String execId, String[] blockIds) {
             this.appId = appId;
@@ -263,10 +240,10 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
         @Override
         public ManagedBuffer next() {
             final ManagedBuffer block = blockManager.getBlockData(appId, execId, shuffleId,
-                    shuffleBlockIds[index],
-                    shuffleBlockIds[index + 1],
-                    shuffleBlockIds[index + 2]);
-	        index += 3;
+                shuffleBlockIds[index],
+                shuffleBlockIds[index + 1],
+                shuffleBlockIds[index + 2]);
+            index += 3;
             metrics.blockTransferRateBytes.mark(block != null ? block.size() : 0);
             return block;
         }

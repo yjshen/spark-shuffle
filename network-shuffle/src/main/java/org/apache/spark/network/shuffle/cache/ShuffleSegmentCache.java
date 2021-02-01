@@ -18,14 +18,6 @@
 package org.apache.spark.network.shuffle.cache;
 
 import static com.google.common.base.Preconditions.checkArgument;
-
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocatorMetric;
@@ -37,33 +29,23 @@ import org.apache.spark.network.util.JavaUtils;
 import org.apache.spark.network.util.TransportConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ShuffleSegmentCache {
     private static final Logger logger = LoggerFactory.getLogger(ShuffleSegmentCache.class);
-
-    abstract ByteBuf get(ShuffleSegment segment) throws Exception;
-
-    abstract void invalidateAll();
-
-    abstract void invalidateAll(Iterable<ShuffleSegment> keys);
-
-    abstract void invalidate(ShuffleSegment key);
-
     protected final long capacity;
-
-    private Object allocationLock = new Object();
-
     protected final ConcurrentMap<String, Long> cacheSizeByAppId;
-
     protected final BlockManagerMonitor monitor;
-
     protected final TransportConf conf;
-
     private final boolean useDirectMemory;
-
     private final AtomicBoolean seenOOM = new AtomicBoolean(false);
-
     private final ByteBufAllocatorMetric metric = UnpooledByteBufAllocator.DEFAULT.metric();
+    private Object allocationLock = new Object();
 
     public ShuffleSegmentCache(long capacity, BlockManagerMonitor monitor, TransportConf conf) {
         this.capacity = capacity;
@@ -72,6 +54,14 @@ public abstract class ShuffleSegmentCache {
         this.conf = conf;
         this.useDirectMemory = conf.cachePreferDirect();
     }
+
+    abstract ByteBuf get(ShuffleSegment segment) throws Exception;
+
+    abstract void invalidateAll();
+
+    abstract void invalidateAll(Iterable<ShuffleSegment> keys);
+
+    abstract void invalidate(ShuffleSegment key);
 
     protected ByteBuf loadShuffleSegment(ShuffleSegment segment) throws IOException {
         checkArgument(segment.getCacheState() == ShuffleSegment.CacheState.CACHABLE,
@@ -91,7 +81,7 @@ public abstract class ShuffleSegmentCache {
             segment.setCacheState(ShuffleSegment.CacheState.CACHED);
             segment.loadedIntoCache();
             logger.debug("Load segment {} in to cache successfully in {} millis",
-                    segment, System.currentTimeMillis() - startTime);
+                segment, System.currentTimeMillis() - startTime);
             return segmentToCache;
         } catch (IOException e) {
             String errorMessage = "Error in reading " + segment;
@@ -106,7 +96,7 @@ public abstract class ShuffleSegmentCache {
                 // ignore
             }
             logger.warn("Load segment {} in to cache failed due to {} in {} millis",
-                    segment, ExceptionUtils.getStackTrace(e), System.currentTimeMillis() - startTime);
+                segment, ExceptionUtils.getStackTrace(e), System.currentTimeMillis() - startTime);
             throw new IOException(errorMessage, e);
         } catch (OutOfMemoryError e) {
             seenOOM.set(true);
@@ -118,13 +108,13 @@ public abstract class ShuffleSegmentCache {
 
     protected void loadingSegment(ShuffleSegment segment) {
         cacheSizeByAppId.merge(segment.getAppId(), segment.getLength(),
-                (oldValue, value) -> oldValue + value);
+            (oldValue, value) -> oldValue + value);
         monitor.segmentLoaded(segment);
     }
 
     protected void evictingSegment(ShuffleSegment segment) {
         cacheSizeByAppId.computeIfPresent(segment.getAppId(),
-                (s, oldValue) -> oldValue - segment.getLength());
+            (s, oldValue) -> oldValue - segment.getLength());
         cacheSizeByAppId.remove(segment.getAppId(), 0L);
         monitor.segmentEvicted(segment);
     }
@@ -170,7 +160,7 @@ public abstract class ShuffleSegmentCache {
         if (useDirectMemory) {
             return Unpooled.directBuffer((int) length);
         } else {
-           return Unpooled.buffer((int) length);
+            return Unpooled.buffer((int) length);
         }
     }
 }

@@ -6,7 +6,6 @@ maxRetries: 3
 retryWait: 5s
 lazyFD: true
 memoryMapThreshold: 2m
-w: 22
 
 zookeeper:
   broker: x

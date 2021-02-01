@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.spark.network.TestUtils;
 import org.apache.spark.network.TransportContext;
@@ -32,7 +31,6 @@ import org.apache.spark.network.shuffle.BlockFetchingListener;
 import org.apache.spark.network.shuffle.ExternalShuffleClient;
 import org.apache.spark.network.shuffle.TestShuffleDataContext;
 import org.apache.spark.network.shuffle.protocol.ExecutorShuffleInfo;
-import org.apache.spark.network.util.MapConfigProvider;
 import org.apache.spark.network.util.ServiceConf;
 import org.apache.spark.network.util.TransportConf;
 import org.junit.After;
@@ -53,223 +51,223 @@ import java.util.concurrent.TimeUnit;
 
 public class ExternalShuffleWithCacheIntegrationSuite {
 
-  private static final String APP_ID = "app-id";
-  private static final String SORT_MANAGER = "org.apache.spark.shuffle.sort.SortShuffleManager";
+    private static final String APP_ID = "app-id";
+    private static final String SORT_MANAGER = "org.apache.spark.shuffle.sort.SortShuffleManager";
 
-  // Executor 0 is sort-based
-  static TestShuffleDataContext dataContext0;
+    // Executor 0 is sort-based
+    static TestShuffleDataContext dataContext0;
 
-  static ExternalShuffleBlockHandlerWithCache handler;
-  static TransportServer server;
-  static TransportConf conf;
+    static ExternalShuffleBlockHandlerWithCache handler;
+    static TransportServer server;
+    static TransportConf conf;
 
-  static byte[][] exec0Blocks = new byte[][] {
-    new byte[123],
-    new byte[12345],
-    new byte[1234567],
-  };
+    static byte[][] exec0Blocks = new byte[][]{
+        new byte[123],
+        new byte[12345],
+        new byte[1234567],
+    };
 
-  static byte[][] exec1Blocks = new byte[][] {
-    new byte[321],
-    new byte[54321],
-  };
+    static byte[][] exec1Blocks = new byte[][]{
+        new byte[321],
+        new byte[54321],
+    };
 
-  @BeforeClass
-  public static void beforeAll() throws IOException {
-    Random rand = new Random();
+    @BeforeClass
+    public static void beforeAll() throws IOException {
+        Random rand = new Random();
 
-    for (byte[] block : exec0Blocks) {
-      rand.nextBytes(block);
-    }
-    for (byte[] block: exec1Blocks) {
-      rand.nextBytes(block);
-    }
-
-    dataContext0 = new TestShuffleDataContext(2, 5);
-    dataContext0.create();
-    dataContext0.insertSortShuffleData(0, 0, exec0Blocks);
-
-    conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
-    handler = new ExternalShuffleBlockHandlerWithCache(conf, null, new MetricRegistry());
-    TransportContext transportContext = new TransportContext(conf, handler);
-    server = transportContext.createServer();
-  }
-
-  @AfterClass
-  public static void afterAll() {
-    dataContext0.cleanup();
-    server.close();
-  }
-
-  @After
-  public void afterEach() {
-    handler.applicationRemoved(APP_ID, false /* cleanupLocalDirs */);
-  }
-
-  static class FetchResult {
-    public Set<String> successBlocks;
-    public Set<String> failedBlocks;
-    public List<ManagedBuffer> buffers;
-
-    public void releaseBuffers() {
-      for (ManagedBuffer buffer : buffers) {
-        buffer.release();
-      }
-    }
-  }
-
-  // Fetch a set of blocks from a pre-registered executor.
-  private FetchResult fetchBlocks(String execId, String[] blockIds) throws Exception {
-    return fetchBlocks(execId, blockIds, conf, server.getPort());
-  }
-
-  // Fetch a set of blocks from a pre-registered executor. Connects to the server on the given port,
-  // to allow connecting to invalid servers.
-  private FetchResult fetchBlocks(
-      String execId,
-      String[] blockIds,
-      TransportConf clientConf,
-      int port) throws Exception {
-    final FetchResult res = new FetchResult();
-    res.successBlocks = Collections.synchronizedSet(new HashSet<String>());
-    res.failedBlocks = Collections.synchronizedSet(new HashSet<String>());
-    res.buffers = Collections.synchronizedList(new LinkedList<ManagedBuffer>());
-
-    final Semaphore requestsRemaining = new Semaphore(0);
-
-    ExternalShuffleClient client = new ExternalShuffleClient(clientConf, 5000);
-    client.init(APP_ID);
-    client.fetchBlocks(TestUtils.getLocalHost(), port, execId, blockIds,
-      new BlockFetchingListener() {
-        @Override
-        public void onBlockFetchSuccess(String blockId, ManagedBuffer data) {
-          synchronized (this) {
-            if (!res.successBlocks.contains(blockId) && !res.failedBlocks.contains(blockId)) {
-              data.retain();
-              res.successBlocks.add(blockId);
-              res.buffers.add(data);
-              requestsRemaining.release();
-            }
-          }
+        for (byte[] block : exec0Blocks) {
+            rand.nextBytes(block);
+        }
+        for (byte[] block : exec1Blocks) {
+            rand.nextBytes(block);
         }
 
-        @Override
-        public void onBlockFetchFailure(String blockId, Throwable exception) {
-          synchronized (this) {
-            if (!res.successBlocks.contains(blockId) && !res.failedBlocks.contains(blockId)) {
-              res.failedBlocks.add(blockId);
-              requestsRemaining.release();
-            }
-          }
+        dataContext0 = new TestShuffleDataContext(2, 5);
+        dataContext0.create();
+        dataContext0.insertSortShuffleData(0, 0, exec0Blocks);
+
+        conf = new TransportConf("shuffle", ServiceConf.getServiceConf());
+        handler = new ExternalShuffleBlockHandlerWithCache(conf, new MetricRegistry());
+        TransportContext transportContext = new TransportContext(conf, handler);
+        server = transportContext.createServer();
+    }
+
+    @AfterClass
+    public static void afterAll() {
+        dataContext0.cleanup();
+        server.close();
+    }
+
+    private static void registerExecutor(String executorId, ExecutorShuffleInfo executorInfo)
+        throws IOException, InterruptedException {
+        ExternalShuffleClient client = new ExternalShuffleClient(conf, 5000);
+        client.init(APP_ID);
+        client.registerWithShuffleServer(TestUtils.getLocalHost(), server.getPort(),
+            executorId, executorInfo);
+    }
+
+    private static void assertBufferListsEqual(List<ManagedBuffer> list0, List<byte[]> list1)
+        throws Exception {
+        assertEquals(list0.size(), list1.size());
+        for (int i = 0; i < list0.size(); i++) {
+            assertBuffersEqual(list0.get(i), new NioManagedBuffer(ByteBuffer.wrap(list1.get(i))));
         }
-      }, null);
-
-    if (!requestsRemaining.tryAcquire(blockIds.length, 5, TimeUnit.SECONDS)) {
-      fail("Timeout getting response from the server");
     }
-    client.close();
-    return res;
-  }
 
-  @Test
-  public void testFetchOneSort() throws Exception {
-    registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult exec0Fetch = fetchBlocks("exec-0", new String[] { "shuffle_0_0_0" });
-    assertEquals(Sets.newHashSet("shuffle_0_0_0"), exec0Fetch.successBlocks);
-    assertTrue(exec0Fetch.failedBlocks.isEmpty());
-    assertBufferListsEqual(exec0Fetch.buffers, Arrays.asList(exec0Blocks[0]));
-    exec0Fetch.releaseBuffers();
-  }
+    private static void assertBuffersEqual(ManagedBuffer buffer0, ManagedBuffer buffer1)
+        throws Exception {
+        ByteBuffer nio0 = buffer0.nioByteBuffer();
+        ByteBuffer nio1 = buffer1.nioByteBuffer();
 
-  @Test
-  public void testFetchThreeSort() throws Exception {
-    registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult exec0Fetch = fetchBlocks("exec-0",
-      new String[] { "shuffle_0_0_0", "shuffle_0_0_1", "shuffle_0_0_2" });
-    assertEquals(Sets.newHashSet("shuffle_0_0_0", "shuffle_0_0_1", "shuffle_0_0_2"),
-      exec0Fetch.successBlocks);
-    assertTrue(exec0Fetch.failedBlocks.isEmpty());
-    assertBufferListsEqual(exec0Fetch.buffers, Arrays.asList(exec0Blocks));
-    exec0Fetch.releaseBuffers();
-  }
-
-  @Test (expected = RuntimeException.class)
-  public void testRegisterInvalidExecutor() throws Exception {
-    registerExecutor("exec-1", dataContext0.createExecutorInfo("unknown sort manager"));
-  }
-
-  @Test
-  public void testFetchWrongBlockId() throws Exception {
-    registerExecutor("exec-1", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult execFetch = fetchBlocks("exec-1", new String[] { "rdd_1_0_0" });
-    assertTrue(execFetch.successBlocks.isEmpty());
-    assertEquals(Sets.newHashSet("rdd_1_0_0"), execFetch.failedBlocks);
-  }
-
-  @Test
-  public void testFetchNonexistent() throws Exception {
-    registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult execFetch = fetchBlocks("exec-0",
-      new String[] { "shuffle_2_0_0" });
-    assertTrue(execFetch.successBlocks.isEmpty());
-    assertEquals(Sets.newHashSet("shuffle_2_0_0"), execFetch.failedBlocks);
-  }
-
-  @Test
-  public void testFetchWrongExecutor() throws Exception {
-    registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult execFetch0 = fetchBlocks("exec-0", new String[] { "shuffle_0_0_0" /* right */});
-    FetchResult execFetch1 = fetchBlocks("exec-0", new String[] { "shuffle_1_0_0" /* wrong */ });
-    assertEquals(Sets.newHashSet("shuffle_0_0_0"), execFetch0.successBlocks);
-    assertEquals(Sets.newHashSet("shuffle_1_0_0"), execFetch1.failedBlocks);
-  }
-
-  @Test
-  public void testFetchUnregisteredExecutor() throws Exception {
-    registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult execFetch = fetchBlocks("exec-2",
-      new String[] { "shuffle_0_0_0", "shuffle_1_0_0" });
-    assertTrue(execFetch.successBlocks.isEmpty());
-    assertEquals(Sets.newHashSet("shuffle_0_0_0", "shuffle_1_0_0"), execFetch.failedBlocks);
-  }
-
-  @Test
-  public void testFetchNoServer() throws Exception {
-    ServiceConf sc = ServiceConf.getServiceConf();
-    sc.setMaxRetries(0);
-    TransportConf clientConf = new TransportConf("shuffle", sc);
-    registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
-    FetchResult execFetch = fetchBlocks("exec-0",
-      new String[]{"shuffle_1_0_0", "shuffle_1_0_1"}, clientConf, 1 /* port */);
-    assertTrue(execFetch.successBlocks.isEmpty());
-    assertEquals(Sets.newHashSet("shuffle_1_0_0", "shuffle_1_0_1"), execFetch.failedBlocks);
-  }
-
-  private static void registerExecutor(String executorId, ExecutorShuffleInfo executorInfo)
-      throws IOException, InterruptedException {
-    ExternalShuffleClient client = new ExternalShuffleClient(conf, 5000);
-    client.init(APP_ID);
-    client.registerWithShuffleServer(TestUtils.getLocalHost(), server.getPort(),
-      executorId, executorInfo);
-  }
-
-  private static void assertBufferListsEqual(List<ManagedBuffer> list0, List<byte[]> list1)
-    throws Exception {
-    assertEquals(list0.size(), list1.size());
-    for (int i = 0; i < list0.size(); i ++) {
-      assertBuffersEqual(list0.get(i), new NioManagedBuffer(ByteBuffer.wrap(list1.get(i))));
+        int len = nio0.remaining();
+        assertEquals(nio0.remaining(), nio1.remaining());
+        for (int i = 0; i < len; i++) {
+            assertEquals(nio0.get(), nio1.get());
+        }
     }
-  }
 
-  private static void assertBuffersEqual(ManagedBuffer buffer0, ManagedBuffer buffer1)
-      throws Exception {
-    ByteBuffer nio0 = buffer0.nioByteBuffer();
-    ByteBuffer nio1 = buffer1.nioByteBuffer();
-
-    int len = nio0.remaining();
-    assertEquals(nio0.remaining(), nio1.remaining());
-    for (int i = 0; i < len; i ++) {
-      assertEquals(nio0.get(), nio1.get());
+    @After
+    public void afterEach() {
+        handler.applicationRemoved(APP_ID, false /* cleanupLocalDirs */);
     }
-  }
+
+    // Fetch a set of blocks from a pre-registered executor.
+    private FetchResult fetchBlocks(String execId, String[] blockIds) throws Exception {
+        return fetchBlocks(execId, blockIds, conf, server.getPort());
+    }
+
+    // Fetch a set of blocks from a pre-registered executor. Connects to the server on the given port,
+    // to allow connecting to invalid servers.
+    private FetchResult fetchBlocks(
+        String execId,
+        String[] blockIds,
+        TransportConf clientConf,
+        int port) throws Exception {
+        final FetchResult res = new FetchResult();
+        res.successBlocks = Collections.synchronizedSet(new HashSet<String>());
+        res.failedBlocks = Collections.synchronizedSet(new HashSet<String>());
+        res.buffers = Collections.synchronizedList(new LinkedList<ManagedBuffer>());
+
+        final Semaphore requestsRemaining = new Semaphore(0);
+
+        ExternalShuffleClient client = new ExternalShuffleClient(clientConf, 5000);
+        client.init(APP_ID);
+        client.fetchBlocks(TestUtils.getLocalHost(), port, execId, blockIds,
+            new BlockFetchingListener() {
+                @Override
+                public void onBlockFetchSuccess(String blockId, ManagedBuffer data) {
+                    synchronized (this) {
+                        if (!res.successBlocks.contains(blockId) && !res.failedBlocks.contains(blockId)) {
+                            data.retain();
+                            res.successBlocks.add(blockId);
+                            res.buffers.add(data);
+                            requestsRemaining.release();
+                        }
+                    }
+                }
+
+                @Override
+                public void onBlockFetchFailure(String blockId, Throwable exception) {
+                    synchronized (this) {
+                        if (!res.successBlocks.contains(blockId) && !res.failedBlocks.contains(blockId)) {
+                            res.failedBlocks.add(blockId);
+                            requestsRemaining.release();
+                        }
+                    }
+                }
+            }, null);
+
+        if (!requestsRemaining.tryAcquire(blockIds.length, 5, TimeUnit.SECONDS)) {
+            fail("Timeout getting response from the server");
+        }
+        client.close();
+        return res;
+    }
+
+    @Test
+    public void testFetchOneSort() throws Exception {
+        registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult exec0Fetch = fetchBlocks("exec-0", new String[]{"shuffle_0_0_0"});
+        assertEquals(Sets.newHashSet("shuffle_0_0_0"), exec0Fetch.successBlocks);
+        assertTrue(exec0Fetch.failedBlocks.isEmpty());
+        assertBufferListsEqual(exec0Fetch.buffers, Arrays.asList(exec0Blocks[0]));
+        exec0Fetch.releaseBuffers();
+    }
+
+    @Test
+    public void testFetchThreeSort() throws Exception {
+        registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult exec0Fetch = fetchBlocks("exec-0",
+            new String[]{"shuffle_0_0_0", "shuffle_0_0_1", "shuffle_0_0_2"});
+        assertEquals(Sets.newHashSet("shuffle_0_0_0", "shuffle_0_0_1", "shuffle_0_0_2"),
+            exec0Fetch.successBlocks);
+        assertTrue(exec0Fetch.failedBlocks.isEmpty());
+        assertBufferListsEqual(exec0Fetch.buffers, Arrays.asList(exec0Blocks));
+        exec0Fetch.releaseBuffers();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testRegisterInvalidExecutor() throws Exception {
+        registerExecutor("exec-1", dataContext0.createExecutorInfo("unknown sort manager"));
+    }
+
+    @Test
+    public void testFetchWrongBlockId() throws Exception {
+        registerExecutor("exec-1", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult execFetch = fetchBlocks("exec-1", new String[]{"rdd_1_0_0"});
+        assertTrue(execFetch.successBlocks.isEmpty());
+        assertEquals(Sets.newHashSet("rdd_1_0_0"), execFetch.failedBlocks);
+    }
+
+    @Test
+    public void testFetchNonexistent() throws Exception {
+        registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult execFetch = fetchBlocks("exec-0",
+            new String[]{"shuffle_2_0_0"});
+        assertTrue(execFetch.successBlocks.isEmpty());
+        assertEquals(Sets.newHashSet("shuffle_2_0_0"), execFetch.failedBlocks);
+    }
+
+    @Test
+    public void testFetchWrongExecutor() throws Exception {
+        registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult execFetch0 = fetchBlocks("exec-0", new String[]{"shuffle_0_0_0" /* right */});
+        FetchResult execFetch1 = fetchBlocks("exec-0", new String[]{"shuffle_1_0_0" /* wrong */});
+        assertEquals(Sets.newHashSet("shuffle_0_0_0"), execFetch0.successBlocks);
+        assertEquals(Sets.newHashSet("shuffle_1_0_0"), execFetch1.failedBlocks);
+    }
+
+    @Test
+    public void testFetchUnregisteredExecutor() throws Exception {
+        registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult execFetch = fetchBlocks("exec-2",
+            new String[]{"shuffle_0_0_0", "shuffle_1_0_0"});
+        assertTrue(execFetch.successBlocks.isEmpty());
+        assertEquals(Sets.newHashSet("shuffle_0_0_0", "shuffle_1_0_0"), execFetch.failedBlocks);
+    }
+
+    @Test
+    public void testFetchNoServer() throws Exception {
+        ServiceConf sc = ServiceConf.getServiceConf();
+        sc.setMaxRetries(0);
+        TransportConf clientConf = new TransportConf("shuffle", sc);
+        registerExecutor("exec-0", dataContext0.createExecutorInfo(SORT_MANAGER));
+        FetchResult execFetch = fetchBlocks("exec-0",
+            new String[]{"shuffle_1_0_0", "shuffle_1_0_1"}, clientConf, 1 /* port */);
+        assertTrue(execFetch.successBlocks.isEmpty());
+        assertEquals(Sets.newHashSet("shuffle_1_0_0", "shuffle_1_0_1"), execFetch.failedBlocks);
+    }
+
+    static class FetchResult {
+        public Set<String> successBlocks;
+        public Set<String> failedBlocks;
+        public List<ManagedBuffer> buffers;
+
+        public void releaseBuffers() {
+            for (ManagedBuffer buffer : buffers) {
+                buffer.release();
+            }
+        }
+    }
 }

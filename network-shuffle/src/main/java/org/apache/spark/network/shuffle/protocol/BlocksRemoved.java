@@ -20,53 +20,54 @@ package org.apache.spark.network.shuffle.protocol;
 import com.google.common.base.Objects;
 import io.netty.buffer.ByteBuf;
 
-// Needed by ScalaDoc. See SPARK-7726
-import static org.apache.spark.network.shuffle.protocol.BlockTransferMessage.Type;
-
-/** The reply to remove blocks giving back the number of removed blocks. */
+/**
+ * The reply to remove blocks giving back the number of removed blocks.
+ */
 public class BlocksRemoved extends BlockTransferMessage {
-  public final int numRemovedBlocks;
+    public final int numRemovedBlocks;
 
-  public BlocksRemoved(int numRemovedBlocks) {
-    this.numRemovedBlocks = numRemovedBlocks;
-  }
-
-  @Override
-  protected Type type() { return Type.BLOCKS_REMOVED; }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(numRemovedBlocks);
-  }
-
-  @Override
-  public String toString() {
-    return Objects.toStringHelper(this)
-      .add("numRemovedBlocks", numRemovedBlocks)
-      .toString();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (other != null && other instanceof BlocksRemoved) {
-      BlocksRemoved o = (BlocksRemoved) other;
-      return Objects.equal(numRemovedBlocks, o.numRemovedBlocks);
+    public BlocksRemoved(int numRemovedBlocks) {
+        this.numRemovedBlocks = numRemovedBlocks;
     }
-    return false;
-  }
 
-  @Override
-  public int encodedLength() {
-    return 4;
-  }
+    public static BlocksRemoved decode(ByteBuf buf) {
+        int numRemovedBlocks = buf.readInt();
+        return new BlocksRemoved(numRemovedBlocks);
+    }
 
-  @Override
-  public void encode(ByteBuf buf) {
-    buf.writeInt(numRemovedBlocks);
-  }
+    @Override
+    protected Type type() {
+        return Type.BLOCKS_REMOVED;
+    }
 
-  public static BlocksRemoved decode(ByteBuf buf) {
-    int numRemovedBlocks = buf.readInt();
-    return new BlocksRemoved(numRemovedBlocks);
-  }
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(numRemovedBlocks);
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+            .add("numRemovedBlocks", numRemovedBlocks)
+            .toString();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other != null && other instanceof BlocksRemoved) {
+            BlocksRemoved o = (BlocksRemoved) other;
+            return Objects.equal(numRemovedBlocks, o.numRemovedBlocks);
+        }
+        return false;
+    }
+
+    @Override
+    public int encodedLength() {
+        return 4;
+    }
+
+    @Override
+    public void encode(ByteBuf buf) {
+        buf.writeInt(numRemovedBlocks);
+    }
 }

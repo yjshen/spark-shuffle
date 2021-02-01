@@ -76,17 +76,17 @@ public class GenericBlockManagerMonitor implements BlockManagerMonitor {
         registry.register("UnpooledAllocatorHeap", (Gauge<Long>) () -> UnpooledByteBufAllocator.DEFAULT.metric().usedHeapMemory());
 
         segmentReadUsageAtEviction = registry.register("segmentUsageAtEviction",
-                new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.SECONDS)));
+            new Histogram(new SlidingTimeWindowReservoir(
+                histogramWindowSize, TimeUnit.SECONDS)));
         readCachedSize = registry.register("readCachedSize",
-                new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.SECONDS)));
+            new Histogram(new SlidingTimeWindowReservoir(
+                histogramWindowSize, TimeUnit.SECONDS)));
         readThroughRequestSize = registry.register("readThroughRequestSize",
-                new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.SECONDS)));
+            new Histogram(new SlidingTimeWindowReservoir(
+                histogramWindowSize, TimeUnit.SECONDS)));
         readThroughSegmentSize = registry.register("readThroughSegmentSize",
-                new Histogram(new SlidingTimeWindowReservoir(
-                        histogramWindowSize, TimeUnit.SECONDS)));
+            new Histogram(new SlidingTimeWindowReservoir(
+                histogramWindowSize, TimeUnit.SECONDS)));
     }
 
     @Override
@@ -138,10 +138,10 @@ public class GenericBlockManagerMonitor implements BlockManagerMonitor {
 
     @Override
     public void segmentEvicted(ShuffleSegment segment) {
-        cacheSegmentSizeTotal.add(- segment.getLength());
+        cacheSegmentSizeTotal.add(-segment.getLength());
         cacheSegmentCountTotal.decrement();
         segmentEvictedSize.add(segment.getLength());
         segmentEvictedCount.increment();
-        segmentReadUsageAtEviction.update((int)(segment.getUsageRatio() * 100));
+        segmentReadUsageAtEviction.update((int) (segment.getUsageRatio() * 100));
     }
 }

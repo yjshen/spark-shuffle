@@ -25,11 +25,10 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.Weigher;
 import io.netty.buffer.ByteBuf;
 import org.apache.spark.network.shuffle.cache.metrics.BlockManagerMonitor;
+import org.apache.spark.network.shuffle.cache.metrics.CaffeineCacheMetrics;
 import org.apache.spark.network.util.TransportConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.spark.network.shuffle.cache.metrics.CaffeineCacheMetrics;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,10 +40,10 @@ public class SegmentCacheCaffeine extends ShuffleSegmentCache {
     private final LoadingCache<ShuffleSegment, ByteBuf> shuffleSegmentCache;
 
     public SegmentCacheCaffeine(
-            long cacheCapacity,
-            MetricRegistry registry,
-            BlockManagerMonitor monitor,
-            TransportConf conf) {
+        long cacheCapacity,
+        MetricRegistry registry,
+        BlockManagerMonitor monitor,
+        TransportConf conf) {
         super(cacheCapacity, monitor, conf);
 
         CacheLoader<ShuffleSegment, ByteBuf> shuffleCacheLoader =
@@ -73,17 +72,17 @@ public class SegmentCacheCaffeine extends ShuffleSegmentCache {
             };
 
         Caffeine builder = Caffeine.newBuilder()
-                .maximumWeight(cacheCapacity)
-                .weigher((Weigher<ShuffleSegment, ByteBuf>)
-                        (segment, buffer) -> (int) segment.getLength())
-                .removalListener(removalListener)
-                .recordStats(() -> new CaffeineCacheMetrics(registry,"caffeine"));
+            .maximumWeight(cacheCapacity)
+            .weigher((Weigher<ShuffleSegment, ByteBuf>)
+                (segment, buffer) -> (int) segment.getLength())
+            .removalListener(removalListener)
+            .recordStats(() -> new CaffeineCacheMetrics(registry, "caffeine"));
 
         long expirationAfterAccess = conf.cacheEvictTimeSec();
         if (expirationAfterAccess > 0) {
             builder.expireAfterAccess(Duration.ofSeconds(expirationAfterAccess));
             logger.warn("Caffeine cache configured to evict shuffle segment after {} seconds since its last access",
-                    expirationAfterAccess);
+                expirationAfterAccess);
         }
 
         shuffleSegmentCache = builder.build(shuffleCacheLoader);

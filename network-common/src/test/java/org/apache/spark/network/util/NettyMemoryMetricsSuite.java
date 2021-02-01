@@ -32,7 +32,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 public class NettyMemoryMetricsSuite {

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package com.kwai
+package org.apache.spark.network.shuffle
 
 import org.apache.log4j.{Level, LogManager, PropertyConfigurator}
-import org.slf4j.{Logger, LoggerFactory}
 import org.slf4j.impl.StaticLoggerBinder
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
  * Utility trait for classes that want to log data. Creates a SLF4J logger for the class and allows
@@ -98,8 +98,8 @@ trait Logging {
   }
 
   protected def initializeLogIfNecessary(
-      isInterpreter: Boolean,
-      silent: Boolean = false): Boolean = {
+    isInterpreter: Boolean,
+    silent: Boolean = false): Boolean = {
     if (!Logging.initialized) {
       Logging.initLock.synchronized {
         if (!Logging.initialized) {
@@ -161,11 +161,10 @@ trait Logging {
 }
 
 private[spark] object Logging {
+  val initLock = new Object()
   @volatile private var initialized = false
   @volatile private var defaultRootLevel: Level = null
   @volatile private var defaultSparkLog4jConfig = false
-
-  val initLock = new Object()
   try {
     // We use reflection here to handle the case where users remove the
     // slf4j-to-jul bridge order to route their logs to JUL.

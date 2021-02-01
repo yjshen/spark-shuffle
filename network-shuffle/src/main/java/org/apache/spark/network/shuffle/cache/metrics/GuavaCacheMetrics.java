@@ -18,15 +18,17 @@
 package org.apache.spark.network.shuffle.cache.metrics;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.google.common.cache.Cache;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GuavaCacheMetrics extends HashMap<String, Metric> implements MetricSet {
+
+    private GuavaCacheMetrics() {
+    }
 
     /**
      * Wraps the provided Guava cache's statistics into Gauges suitable for reporting via Codahale Metrics
@@ -42,27 +44,24 @@ public class GuavaCacheMetrics extends HashMap<String, Metric> implements Metric
         GuavaCacheMetrics metrics = new GuavaCacheMetrics();
 
         metrics.put(name(cacheName, "hitRate"),
-                (Gauge<Double>) () -> cache.stats().hitRate());
+            (Gauge<Double>) () -> cache.stats().hitRate());
 
         metrics.put(name(cacheName, "hitCount"),
-                (Gauge<Long>) () -> cache.stats().hitCount());
+            (Gauge<Long>) () -> cache.stats().hitCount());
 
         metrics.put(name(cacheName, "missCount"),
-                (Gauge<Long>) () -> cache.stats().missCount());
+            (Gauge<Long>) () -> cache.stats().missCount());
 
         metrics.put(name(cacheName, "loadExceptionCount"),
-                (Gauge<Long>) () -> cache.stats().loadExceptionCount());
+            (Gauge<Long>) () -> cache.stats().loadExceptionCount());
 
         metrics.put(name(cacheName, "evictionCount"),
-                (Gauge<Long>) () -> cache.stats().evictionCount());
+            (Gauge<Long>) () -> cache.stats().evictionCount());
 
         metrics.put(name(cacheName, "size"),
-                (Gauge<Long>) () -> cache.size());
+            (Gauge<Long>) () -> cache.size());
 
         return metrics;
-    }
-
-    private GuavaCacheMetrics() {
     }
 
     @Override
