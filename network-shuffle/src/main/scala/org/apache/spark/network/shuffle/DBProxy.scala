@@ -12,6 +12,15 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentMap
 
 case class DBProxy(conf: ServiceConf) extends Logging {
+  private val RECOVERY_FILE_NAME = "registeredExecutors.ldb"
+
+  private val mapper = new ObjectMapper()
+  /**
+   * This a common prefix to the key for each app registration we stick in leveldb, so they
+   * are easy to find, since leveldb lets you search based on prefix.
+   */
+  private val APP_KEY_PREFIX = "AppExecShuffleInfo"
+  private val CURRENT_VERSION = new LevelDBProvider.StoreVersion(1, 0)
 
   val allPaths =
     new Path(conf.getSparkaeExecutorPath) ::
@@ -21,15 +30,6 @@ case class DBProxy(conf: ServiceConf) extends Logging {
   val dbs: Seq[DB] = allPaths
     .flatMap(initRecoveryDb(_, RECOVERY_FILE_NAME))
     .map(LevelDBProvider.initLevelDB(_, CURRENT_VERSION, mapper))
-
-  private val RECOVERY_FILE_NAME = "registeredExecutors.ldb"
-  private val mapper = new ObjectMapper()
-  /**
-   * This a common prefix to the key for each app registration we stick in leveldb, so they
-   * are easy to find, since leveldb lets you search based on prefix.
-   */
-  private val APP_KEY_PREFIX = "AppExecShuffleInfo"
-  private val CURRENT_VERSION = new LevelDBProvider.StoreVersion(1, 0)
 
   def reloadAllExecutorsFromRecoveryFiles() = {
     val registeredExecutors = Maps.newConcurrentMap[AppExecId, ExecutorShuffleInfo]()
