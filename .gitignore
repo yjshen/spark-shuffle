@@ -25,6 +25,7 @@ build/apache-maven*
 build/scala*
 build/zinc*
 cache
+dist/
 !network-shuffle/src/main/java/org/apache/spark/network/shuffle/cache
 !network-shuffle/src/test/java/org/apache/spark/network/shuffle/cache
 checkpoint
