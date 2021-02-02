@@ -121,7 +121,7 @@ fi
 echo "Spark version is $VERSION"
 
 if [ "$MAKE_TGZ" == "true" ]; then
-  echo "Making spark-$VERSION-bin-$NAME.tgz"
+  echo "Making spark-shuffle-$VERSION-bin-$NAME.tgz"
 else
   echo "Making distribution for Spark $VERSION in '$DISTDIR'..."
 fi
@@ -156,10 +156,10 @@ cp "$SS_HOME/README.md" "$DISTDIR"
 cp -r "$SS_HOME/sbin" "$DISTDIR"
 
 if [ "$MAKE_TGZ" == "true" ]; then
-  TARDIR_NAME=spark-$VERSION-bin-$NAME
+  TARDIR_NAME=spark-shuffle-$VERSION-bin-$NAME
   TARDIR="$SS_HOME/$TARDIR_NAME"
   rm -rf "$TARDIR"
   cp -r "$DISTDIR" "$TARDIR"
-  tar czf "spark-$VERSION-bin-$NAME.tar.gz" -C "$SS_HOME" "$TARDIR_NAME"
+  tar czf "spark-shuffle-$VERSION-bin-$NAME.tar.gz" -C "$SS_HOME" "$TARDIR_NAME"
   rm -rf "$TARDIR"
 fi
