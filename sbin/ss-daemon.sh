@@ -59,7 +59,7 @@ log="$SS_LOG_DIR/spark-shuffle-service-$SS_IDENT_STRING-$HOSTNAME.out"
 pid="$SS_PID_DIR/spark-shuffle-service-$SS_IDENT_STRING.pid"
 
 SS_JARS_DIR="${SS_HOME}/jars"
-CLASSPATH=$(JARS=("$SS_JARS_DIR"/*.jar); IFS=:; echo "${JARS[*]}")
+CLASSPATH=$(JARS=("$SS_JARS_DIR"/*.jar); IFS=:; echo "${JARS[*]}"):$SS_HOME/conf/
 
 execute_command() {
   if [ -z ${SS_NO_DAEMONIZE+set} ]; then
