@@ -147,12 +147,12 @@ rm -rf "$DISTDIR"
 mkdir -p "$DISTDIR/jars"
 
 # Copy jars
-cp "$SS_HOME"/network-common/target/*.jar "$DISTDIR/jars/"
-cp "$SS_HOME"/network-shuffle/target/*.jar "$DISTDIR/jars/"
+cp "$SS_HOME"/network-shuffle/target/*-shuffle-service.jar "$DISTDIR/jars/"
 
 # Copy other things
 mkdir "$DISTDIR/conf"
 cp "$SS_HOME"/conf/* "$DISTDIR/conf"
+cp "$SS_HOME/README.md" "$DISTDIR"
 cp -r "$SS_HOME/sbin" "$DISTDIR"
 
 if [ "$MAKE_TGZ" == "true" ]; then
