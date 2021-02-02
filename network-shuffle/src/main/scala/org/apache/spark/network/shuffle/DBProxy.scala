@@ -12,11 +12,16 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentMap
 
 case class DBProxy(conf: ServiceConf) extends Logging {
-  val allPaths = new Path(conf.getSparkaeExecutorPath) ::
-    new Path(conf.getSparkaeExecutorPath) :: Nil
+
+  val allPaths =
+    new Path(conf.getSparkaeExecutorPath) ::
+    new Path(conf.getSpark3ExecutorPath) ::
+    Nil
+
   val dbs: Seq[DB] = allPaths
     .flatMap(initRecoveryDb(_, RECOVERY_FILE_NAME))
     .map(LevelDBProvider.initLevelDB(_, CURRENT_VERSION, mapper))
+
   private val RECOVERY_FILE_NAME = "registeredExecutors.ldb"
   private val mapper = new ObjectMapper()
   /**

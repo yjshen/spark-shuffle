@@ -32,7 +32,7 @@ public class ServiceConf {
     private boolean lazyFD = true;
     private boolean enableVerboseMetrics = false;
     private String spark3ExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle";
-    private String sparkaeExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle";
+    private String sparkaeExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark_adaptive_shuffle";
 
     private ZKConf zookeeper;
     private CacheConf cache;
