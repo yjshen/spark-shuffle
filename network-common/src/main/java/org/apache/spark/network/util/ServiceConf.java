@@ -262,7 +262,7 @@ public class ServiceConf {
     }
 
     public static class ZKConf {
-        private String broker = "localhost";
+        private String broker = "UNKNOWN";
         private int port = 2181;
 
         public ZKConf() {
@@ -384,8 +384,8 @@ public class ServiceConf {
     public static class MetricsConf {
         private String monitorLevel = "none";
         private String reportInterval = "1min";
-        private String kafkaBroker = "y";
-        private String kafkaTopic = "z";
+        private String kafkaBroker = "UNKNOWN";
+        private String kafkaTopic = "UNKNOWN";
         private String histogramTimeWindow = "1min";
 
         public MetricsConf() {
