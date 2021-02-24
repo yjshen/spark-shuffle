@@ -45,7 +45,7 @@ public abstract class ShuffleSegmentCache {
     private final boolean useDirectMemory;
     private final AtomicBoolean seenOOM = new AtomicBoolean(false);
     private final ByteBufAllocatorMetric metric = UnpooledByteBufAllocator.DEFAULT.metric();
-    private Object allocationLock = new Object();
+    private final Object allocationLock = new Object();
 
     public ShuffleSegmentCache(long capacity, BlockManagerMonitor monitor, TransportConf conf) {
         this.capacity = capacity;
@@ -66,14 +66,14 @@ public abstract class ShuffleSegmentCache {
     protected ByteBuf loadShuffleSegment(ShuffleSegment segment) throws IOException {
         checkArgument(segment.getCacheState() == ShuffleSegment.CacheState.CACHABLE,
             "Trying to cache a segment with wrong cache state: " + segment);
-        ByteBuf segmentToCache = tryAllocate(segment.getLength());
-        if (segmentToCache == null) {
-            return null;
-        }
-        FileChannel channel = null;
         logger.debug("Start to load segment {} into cache", segment);
         long startTime = System.currentTimeMillis();
+        FileChannel channel = null;
         try {
+            ByteBuf segmentToCache = tryAllocate(segment.getLength());
+            if (segmentToCache == null) {
+                return null;
+            }
             channel = new RandomAccessFile(segment.getDataFile(), "r").getChannel();
             ByteBuffer mmaped =
                 channel.map(FileChannel.MapMode.READ_ONLY, segment.getOffset(), segment.getLength());
