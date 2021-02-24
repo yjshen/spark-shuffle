@@ -343,7 +343,7 @@ public class ExternalShuffleBlockResolverWithCache extends BlockResolver {
                 splitResults = splitter.getResults(appId, indexFile, dataFile);
                 fileToSegments.put(indexFile, splitResults);
                 logger.info("Split map output file {} successfully.", indexFile);
-                logger.info("Split Results: {}", splitResults.entrySet().stream()
+                logger.debug("Split Results: {}", splitResults.entrySet().stream()
                     .map(entry -> String.format("Start offset: %d, %s", entry.getKey(), entry.getValue()))
                     .collect(Collectors.joining(",")));
                 logger.info("The split procedure took {} ms", System.currentTimeMillis() - startTime);
