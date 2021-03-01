@@ -22,12 +22,12 @@ object SparkShuffleService extends Logging {
     // we override this value since this service is started from the command line
     // and we assume the user really wants it to be running
     server = new ShuffleServer()
-    server.serviceInit(serviceConf)
+    server.start(serviceConf)
 
     logDebug("Adding shutdown hook") // force eager creation of logger
     ShutdownHookManager.addShutdownHook { () =>
       logInfo("Shutting down shuffle service.")
-      server.serviceStop()
+      server.stop()
       barrier.countDown()
     }
 

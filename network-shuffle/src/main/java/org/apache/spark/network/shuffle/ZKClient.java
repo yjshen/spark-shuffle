@@ -30,6 +30,14 @@ public class ZKClient {
         }
     }
 
+    public void close() {
+        try {
+            zkc.close();
+        } catch (InterruptedException e) {
+            LOG.error("ZKClient got closed", e);
+        }
+    }
+
     public void watchAppDelete(String appId) {
         new AppDeleteWatcher(zkc, handler, appId);
     }

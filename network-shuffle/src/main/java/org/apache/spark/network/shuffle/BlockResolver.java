@@ -270,6 +270,7 @@ public abstract class BlockResolver {
 
     public void close() {
         db.close();
+        zkc.close();
     }
 
     public int removeBlocks(String appId, String execId, String[] blockIds) {

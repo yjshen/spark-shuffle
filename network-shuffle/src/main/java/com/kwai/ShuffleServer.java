@@ -72,7 +72,7 @@ public class ShuffleServer {
     /**
      * Start the shuffle server with the given configuration.
      */
-    protected void serviceInit(ServiceConf conf) throws Exception {
+    protected void start(ServiceConf conf) throws Exception {
         _conf = conf;
 
         TransportConf transportConf = new TransportConf("shuffle", conf);
@@ -142,7 +142,7 @@ public class ShuffleServer {
     /**
      * Close the shuffle server to clean up any associated state.
      */
-    protected void serviceStop() {
+    protected void stop() {
         try {
             if (shuffleServer != null) {
                 shuffleServer.close();
