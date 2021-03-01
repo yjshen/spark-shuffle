@@ -90,7 +90,7 @@ public class SegmentCacheCaffeine extends ShuffleSegmentCache {
 
         if (expirationAfterAccess > 0) {
             ScheduledExecutorService eagerCleaner = Executors.newSingleThreadScheduledExecutor(
-                NettyUtils.createThreadFactory("A"));
+                NettyUtils.createThreadFactory("Caffeine-cache-cleaner"));
             eagerCleaner.scheduleAtFixedRate(shuffleSegmentCache::cleanUp,
                 expirationAfterAccess, expirationAfterAccess, TimeUnit.SECONDS);
         }
