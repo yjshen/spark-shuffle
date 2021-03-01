@@ -76,6 +76,8 @@ public class TransportServer implements Closeable {
         try {
             init(hostToBind, portToBind);
             shouldClose = false;
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             if (shouldClose) {
                 JavaUtils.closeQuietly(this);
