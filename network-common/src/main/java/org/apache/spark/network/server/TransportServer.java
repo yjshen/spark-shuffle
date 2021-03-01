@@ -79,6 +79,7 @@ public class TransportServer implements Closeable {
         } finally {
             if (shouldClose) {
                 JavaUtils.closeQuietly(this);
+                System.exit(1);
             }
         }
     }
