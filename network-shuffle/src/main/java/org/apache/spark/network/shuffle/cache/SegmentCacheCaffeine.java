@@ -26,6 +26,7 @@ import com.github.benmanes.caffeine.cache.Weigher;
 import io.netty.buffer.ByteBuf;
 import org.apache.spark.network.shuffle.cache.metrics.BlockManagerMonitor;
 import org.apache.spark.network.shuffle.cache.metrics.CaffeineCacheMetrics;
+import org.apache.spark.network.util.NettyUtils;
 import org.apache.spark.network.util.TransportConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,8 @@ public class SegmentCacheCaffeine extends ShuffleSegmentCache {
         shuffleSegmentCache = builder.build(shuffleCacheLoader);
 
         if (expirationAfterAccess > 0) {
-            ScheduledExecutorService eagerCleaner = Executors.newSingleThreadScheduledExecutor();
+            ScheduledExecutorService eagerCleaner = Executors.newSingleThreadScheduledExecutor(
+                NettyUtils.createThreadFactory("A"));
             eagerCleaner.scheduleAtFixedRate(shuffleSegmentCache::cleanUp,
                 expirationAfterAccess, expirationAfterAccess, TimeUnit.SECONDS);
         }
