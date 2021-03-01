@@ -51,7 +51,7 @@ public abstract class BlockResolver {
     @VisibleForTesting
     protected final DBProxy db;
 
-//    protected final ZKClient zkc;
+    protected final ZKClient zkc;
 
     final boolean rddFetchEnabled = false;
 
@@ -76,7 +76,7 @@ public abstract class BlockResolver {
         executors = db.reloadAllExecutorsFromRecoveryFiles();
         knownApps = Maps.newConcurrentMap();
         this.directoryCleaner = directoryCleaner;
-//        zkc = new ZKClient(conf.getServiceConf().getZookeeper().getHostPort(), this);
+        zkc = new ZKClient(conf.getServiceConf().getZookeeper().getHostPort(), this);
     }
 
     /**
@@ -168,7 +168,7 @@ public abstract class BlockResolver {
 
     public void seenApp(String appId) {
         knownApps.computeIfAbsent(appId, k -> {
-//            zkc.watchAppDelete(appId);
+            zkc.watchAppDelete(appId);
             return (byte) 0;
         });
     }
@@ -270,7 +270,7 @@ public abstract class BlockResolver {
 
     public void close() {
         db.close();
-//        zkc.close();
+        zkc.close();
     }
 
     public int removeBlocks(String appId, String execId, String[] blockIds) {
