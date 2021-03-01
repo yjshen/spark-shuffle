@@ -2,13 +2,13 @@ package org.apache.spark.network.shuffle
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.Maps
-import org.apache.hadoop.fs.Path
 import org.apache.spark.network.shuffle.protocol.ExecutorShuffleInfo
 import org.apache.spark.network.util.{LevelDBProvider, ServiceConf}
 import org.iq80.leveldb.DB
 
 import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Path, Paths}
 import java.util.concurrent.ConcurrentMap
 
 case class DBProxy(conf: ServiceConf) extends Logging {
@@ -23,8 +23,8 @@ case class DBProxy(conf: ServiceConf) extends Logging {
   private val CURRENT_VERSION = new LevelDBProvider.StoreVersion(1, 0)
 
   val allPaths =
-    new Path(conf.getSparkaeExecutorPath) ::
-    new Path(conf.getSpark3ExecutorPath) ::
+    Paths.get(conf.getSparkaeExecutorPath) ::
+    Paths.get(conf.getSpark3ExecutorPath) ::
     Nil
 
   val dbs: Seq[DB] = allPaths

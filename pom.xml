@@ -22,7 +22,6 @@
     <slf4j.version>1.7.16</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
     <hadoop.version>2.6.0U49.7-cdh5.10.0-hotfix-2</hadoop.version>
-    <zookeeper.version>3.4.6</zookeeper.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <fasterxml.jackson.version>2.6.7</fasterxml.jackson.version>
@@ -74,12 +73,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-common</artifactId>
-        <version>${hadoop.version}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.fusesource.leveldbjni</groupId>
         <artifactId>leveldbjni-all</artifactId>
         <version>1.8</version>
@@ -99,22 +92,6 @@
           <exclusion>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-        <version>${zookeeper.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.jboss.netty</groupId>
-            <artifactId>netty</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
