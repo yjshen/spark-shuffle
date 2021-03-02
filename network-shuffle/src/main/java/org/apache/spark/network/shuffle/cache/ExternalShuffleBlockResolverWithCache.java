@@ -147,7 +147,7 @@ public class ExternalShuffleBlockResolverWithCache extends BlockResolver {
         String appId,
         String execId,
         int shuffleId,
-        int mapId,
+        long mapId,
         int reduceId,
         int numBlocks) {
         AppExecId appExecId = new AppExecId(appId, execId);

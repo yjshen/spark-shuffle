@@ -18,6 +18,7 @@
 package org.apache.spark.network.shuffle.cache;
 
 import static org.apache.spark.network.util.NettyUtils.getRemoteAddress;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
@@ -32,8 +33,13 @@ import org.apache.spark.network.server.OneForOneStreamManager;
 import org.apache.spark.network.server.RpcHandler;
 import org.apache.spark.network.server.StreamManager;
 import org.apache.spark.network.shuffle.protocol.BlockTransferMessage;
+import org.apache.spark.network.shuffle.protocol.BlocksRemoved;
+import org.apache.spark.network.shuffle.protocol.FetchShuffleBlocks;
+import org.apache.spark.network.shuffle.protocol.GetLocalDirsForExecutors;
+import org.apache.spark.network.shuffle.protocol.LocalDirsForExecutors;
 import org.apache.spark.network.shuffle.protocol.OpenBlocks;
 import org.apache.spark.network.shuffle.protocol.RegisterExecutor;
+import org.apache.spark.network.shuffle.protocol.RemoveBlocks;
 import org.apache.spark.network.shuffle.protocol.StreamHandle;
 import org.apache.spark.network.util.TransportConf;
 import org.slf4j.Logger;
@@ -120,6 +126,37 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
                 responseDelayContext.stop();
             }
 
+        } else if (msgObj instanceof FetchShuffleBlocks) {
+            final Timer.Context responseDelayContext = metrics.openBlockRequestLatencyMillis.time();
+            try {
+                int numBlockIds;
+                long streamId;
+                FetchShuffleBlocks msg = (FetchShuffleBlocks) msgObj;
+                blockManager.seenApp(msg.appId);
+                checkAuth(client, msg.appId);
+                numBlockIds = 0;
+                if (msg.batchFetchEnabled) {
+                    numBlockIds = msg.mapIds.length;
+                } else {
+                    for (int[] ids: msg.reduceIds) {
+                        numBlockIds += ids.length;
+                    }
+                }
+                streamId = streamManager.registerStream(client.getClientId(),
+                    new ShuffleManagedBufferIterator(msg), client.getChannel());
+                if (logger.isTraceEnabled()) {
+                    logger.trace(
+                        "Registered streamId {} with {} buffers for client {} from host {}",
+                        streamId,
+                        numBlockIds,
+                        client.getClientId(),
+                        getRemoteAddress(client.getChannel()));
+                }
+                callback.onSuccess(new StreamHandle(streamId, numBlockIds).toByteBuffer());
+            } finally {
+                responseDelayContext.stop();
+            }
+
         } else if (msgObj instanceof RegisterExecutor) {
             final Timer.Context responseDelayContext =
                 metrics.registerExecutorRequestLatencyMillis.time();
@@ -131,6 +168,18 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
             } finally {
                 responseDelayContext.stop();
             }
+
+        } else if (msgObj instanceof RemoveBlocks) {
+            RemoveBlocks msg = (RemoveBlocks) msgObj;
+            checkAuth(client, msg.appId);
+            int numRemovedBlocks = blockManager.removeBlocks(msg.appId, msg.execId, msg.blockIds);
+            callback.onSuccess(new BlocksRemoved(numRemovedBlocks).toByteBuffer());
+
+        } else if (msgObj instanceof GetLocalDirsForExecutors) {
+            GetLocalDirsForExecutors msg = (GetLocalDirsForExecutors) msgObj;
+            checkAuth(client, msg.appId);
+            Map<String, String[]> localDirs = blockManager.getLocalDirs(msg.appId, msg.execIds);
+            callback.onSuccess(new LocalDirsForExecutors(localDirs).toByteBuffer());
 
         } else {
             throw new UnsupportedOperationException("Unexpected message: " + msgObj);
@@ -179,6 +228,10 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
         private final Timer registerExecutorRequestLatencyMillis = new Timer();
         // Block transfer rate in byte per second
         private final Meter blockTransferRateBytes = new Meter();
+        // Number of active connections to the shuffle service
+        private Counter activeConnections = new Counter();
+        // Number of exceptions caught in connections to the shuffle service
+        private Counter caughtExceptions = new Counter();
 
         private ShuffleMetrics() {
             allMetrics = new HashMap<>();
@@ -187,6 +240,8 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
             allMetrics.put("blockTransferRateBytes", blockTransferRateBytes);
             allMetrics.put("registeredExecutorsSize",
                 (Gauge<Integer>) () -> blockManager.getRegisteredExecutorsSize());
+            allMetrics.put("numActiveConnections", activeConnections);
+            allMetrics.put("numCaughtExceptions", caughtExceptions);
         }
 
         @Override
@@ -247,5 +302,70 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
             metrics.blockTransferRateBytes.mark(block != null ? block.size() : 0);
             return block;
         }
+    }
+
+    private class ShuffleManagedBufferIterator implements Iterator<ManagedBuffer> {
+
+        private int mapIdx = 0;
+        private int reduceIdx = 0;
+
+        private final String appId;
+        private final String execId;
+        private final int shuffleId;
+        private final long[] mapIds;
+        private final int[][] reduceIds;
+        private final boolean batchFetchEnabled;
+
+        ShuffleManagedBufferIterator(FetchShuffleBlocks msg) {
+            appId = msg.appId;
+            execId = msg.execId;
+            shuffleId = msg.shuffleId;
+            mapIds = msg.mapIds;
+            reduceIds = msg.reduceIds;
+            batchFetchEnabled = msg.batchFetchEnabled;
+        }
+
+        @Override
+        public boolean hasNext() {
+            // mapIds.length must equal to reduceIds.length, and the passed in FetchShuffleBlocks
+            // must have non-empty mapIds and reduceIds, see the checking logic in
+            // OneForOneBlockFetcher.
+            assert(mapIds.length != 0 && mapIds.length == reduceIds.length);
+            return mapIdx < mapIds.length && reduceIdx < reduceIds[mapIdx].length;
+        }
+
+        @Override
+        public ManagedBuffer next() {
+            ManagedBuffer block;
+            if (!batchFetchEnabled) {
+                block = blockManager.getBlockData(
+                    appId, execId, shuffleId, mapIds[mapIdx], reduceIds[mapIdx][reduceIdx], 1);
+                if (reduceIdx < reduceIds[mapIdx].length - 1) {
+                    reduceIdx += 1;
+                } else {
+                    reduceIdx = 0;
+                    mapIdx += 1;
+                }
+            } else {
+                assert(reduceIds[mapIdx].length == 2);
+                block = blockManager.getBlockData(appId, execId, shuffleId, mapIds[mapIdx],
+                    reduceIds[mapIdx][0], reduceIds[mapIdx][1] - reduceIds[mapIdx][0]);
+                mapIdx += 1;
+            }
+            metrics.blockTransferRateBytes.mark(block != null ? block.size() : 0);
+            return block;
+        }
+    }
+
+    @Override
+    public void channelActive(TransportClient client) {
+        metrics.activeConnections.inc();
+        super.channelActive(client);
+    }
+
+    @Override
+    public void channelInactive(TransportClient client) {
+        metrics.activeConnections.dec();
+        super.channelInactive(client);
     }
 }

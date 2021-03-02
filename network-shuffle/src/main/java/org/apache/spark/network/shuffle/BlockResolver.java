@@ -6,6 +6,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.Weigher;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.network.buffer.FileSegmentManagedBuffer;
 import org.apache.spark.network.buffer.ManagedBuffer;
 import org.apache.spark.network.shuffle.protocol.ExecutorShuffleInfo;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public abstract class BlockResolver {
     private static final Logger logger = LoggerFactory.getLogger(BlockResolver.class);
@@ -289,5 +291,18 @@ public abstract class BlockResolver {
             }
         }
         return numRemovedBlocks;
+    }
+
+    public Map<String, String[]> getLocalDirs(String appId, String[] execIds) {
+        return Arrays.stream(execIds)
+            .map(exec -> {
+                ExecutorShuffleInfo info = executors.get(new AppExecId(appId, exec));
+                if (info == null) {
+                    throw new RuntimeException(
+                        String.format("Executor is not registered (appId=%s, execId=%s)", appId, exec));
+                }
+                return Pair.of(exec, info.localDirs);
+            })
+            .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 }
