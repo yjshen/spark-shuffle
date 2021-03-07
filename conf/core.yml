@@ -7,10 +7,6 @@ retryWait: 5s
 lazyFD: true
 memoryMapThreshold: 2m
 
-zookeeper:
-  broker: x
-  port: 2181
-
 cache:
   enabled: true
   size: 3g

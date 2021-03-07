@@ -110,7 +110,6 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
             final Timer.Context responseDelayContext = metrics.openBlockRequestLatencyMillis.time();
             try {
                 OpenBlocks msg = (OpenBlocks) msgObj;
-                blockManager.seenApp(msg.appId);
                 checkAuth(client, msg.appId);
                 long streamId = streamManager.registerStream(client.getClientId(),
                     new ManagedBufferIterator(msg.appId, msg.execId, msg.blockIds), client.getChannel());
@@ -132,7 +131,6 @@ public class ExternalShuffleBlockHandlerWithCache extends RpcHandler {
                 int numBlockIds;
                 long streamId;
                 FetchShuffleBlocks msg = (FetchShuffleBlocks) msgObj;
-                blockManager.seenApp(msg.appId);
                 checkAuth(client, msg.appId);
                 numBlockIds = 0;
                 if (msg.batchFetchEnabled) {

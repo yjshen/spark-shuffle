@@ -34,7 +34,6 @@ public class ServiceConf {
     private String spark3ExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle";
     private String sparkaeExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark_adaptive_shuffle";
 
-    private ZKConf zookeeper;
     private CacheConf cache;
     private MetricsConf metrics;
 
@@ -43,7 +42,6 @@ public class ServiceConf {
 
     public static ServiceConf getServiceConf() {
         ServiceConf sc = new ServiceConf();
-        sc.setZookeeper(new ZKConf());
         sc.setCache(new CacheConf());
         sc.setMetrics(new MetricsConf());
         return sc;
@@ -59,7 +57,6 @@ public class ServiceConf {
         }
 
         Preconditions.checkNotNull(conf, "Failed to parse conf");
-        Preconditions.checkNotNull(conf.zookeeper, "Failed to parse zookeeper conf");
         Preconditions.checkNotNull(conf.cache, "Failed to parse cache conf");
         Preconditions.checkNotNull(conf.metrics, "Failed to parse metrics conf");
 
@@ -70,7 +67,6 @@ public class ServiceConf {
     public String toString() {
         return Objects.toStringHelper(this)
             .add("port", port)
-            .add("zookeeper", zookeeper)
             .add("cache", cache)
             .add("metrics", metrics)
             .add("serverThreads", serverThreads)
@@ -237,14 +233,6 @@ public class ServiceConf {
         this.directMemory = directMemory;
     }
 
-    public ZKConf getZookeeper() {
-        return zookeeper;
-    }
-
-    public void setZookeeper(ZKConf zookeeper) {
-        this.zookeeper = zookeeper;
-    }
-
     public CacheConf getCache() {
         return cache;
     }
@@ -259,44 +247,6 @@ public class ServiceConf {
 
     public void setMetrics(MetricsConf metrics) {
         this.metrics = metrics;
-    }
-
-    public static class ZKConf {
-        private String broker = "UNKNOWN";
-        private int port = 2181;
-
-        public ZKConf() {
-        }
-
-        public String getBroker() {
-            return broker;
-        }
-
-        public void setBroker(String broker) {
-            this.broker = broker;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
-        }
-
-        public String getHostPort() {
-            return Arrays.stream(broker.split(","))
-                .map(q -> q + ":" + port)
-                .collect(Collectors.joining(","));
-        }
-
-        @Override
-        public String toString() {
-            return Objects.toStringHelper(this)
-                .add("broker", broker)
-                .add("port", port)
-                .toString();
-        }
     }
 
     public static class CacheConf {
