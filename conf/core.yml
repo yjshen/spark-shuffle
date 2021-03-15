@@ -6,6 +6,8 @@ maxRetries: 3
 retryWait: 5s
 lazyFD: true
 memoryMapThreshold: 2m
+spark3ExecutorPath: /home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle
+sparkaeExecutorPath: /home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark_adaptive_shuffle
 
 cache:
   enabled: true
