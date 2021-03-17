@@ -29,7 +29,7 @@ case class DBProxy(conf: ServiceConf) extends Logging {
 
   val dbs: Seq[DB] = allPaths
     .flatMap(initRecoveryDb(_, RECOVERY_FILE_NAME))
-    .map(LevelDBProvider.initLevelDB(_, CURRENT_VERSION, mapper))
+    .map(LevelDBProvider.initLevelDB(_, CURRENT_VERSION, mapper, false))
 
   def reloadAllExecutorsFromRecoveryFiles() = {
     val registeredExecutors = Maps.newConcurrentMap[AppExecId, ExecutorShuffleInfo]()
