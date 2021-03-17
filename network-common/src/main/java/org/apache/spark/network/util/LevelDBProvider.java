@@ -17,6 +17,8 @@
 
 package org.apache.spark.network.util;
 
+import static java.nio.file.Files.copy;
+import static java.nio.file.Files.createDirectories;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +31,13 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * LevelDB utility class available in the network package.
@@ -54,6 +63,13 @@ public class LevelDBProvider {
                     } catch (NativeDB.DBException dbExc) {
                         throw new IOException("Unable to create state store", dbExc);
                     }
+                } else if (e.getMessage().contains("LOCK: Resource temporarily unavailable")) {
+                    // make a copy of the current ldb file and use the cp instead
+                    String parent = dbFile.getParent();
+                    String cp = dbFile.getName() + "-cp";
+                    Path cpPath = Paths.get(parent, cp);
+                    copyFolder(dbFile.toPath(), cpPath);
+                    return initLevelDB(cpPath.toFile(), version, mapper);
                 } else {
                     // the leveldb file seems to be corrupt somehow.  Lets just blow it away and create a new
                     // one, so we can keep processing new apps
@@ -82,6 +98,28 @@ public class LevelDBProvider {
             checkVersion(tmpDb, version, mapper);
         }
         return tmpDb;
+    }
+
+    public static void copyFolder(Path source, Path target, CopyOption... options)
+        throws IOException {
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException {
+                createDirectories(target.resolve(source.relativize(dir)));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+                if (!file.endsWith("LOCK")) {
+                    copy(file, target.resolve(source.relativize(file)), options);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     /**
