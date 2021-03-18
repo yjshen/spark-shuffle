@@ -108,7 +108,7 @@ run_command() {
 
   case "$mode" in
     (class)
-      execute_command $JAVA -cp $CLASSPATH "$@"
+      execute_command $JAVA "${java_opts_array[@]}" -cp $CLASSPATH "$@"
       ;;
 
     (*)
