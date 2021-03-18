@@ -41,6 +41,6 @@ public class AppStatusTestMain {
 
     public static void main(String[] args) {
         String appId = args[0];
-        System.out.println(appId + " is running " + appFinished(appId));
+        System.out.println(appId + " is finished " + appFinished(appId));
     }
 }

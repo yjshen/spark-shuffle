@@ -8,6 +8,7 @@ lazyFD: true
 memoryMapThreshold: 2m
 spark3ExecutorPath: /home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle
 sparkaeExecutorPath: /home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark_adaptive_shuffle
+rmHttpAddress: http://10.48.56.8:8088
 
 cache:
   enabled: true

@@ -130,8 +130,6 @@ public class ExternalShuffleBlockResolverWithCache extends BlockResolver {
         } else {
             this.shuffleSegmentCache = new SegmentCacheGuava(cacheCapacity, registry, cacheMonitor, conf);
         }
-
-
     }
 
     public boolean canReadFromCache(String appId) {
