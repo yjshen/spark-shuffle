@@ -1,5 +1,6 @@
 package org.apache.spark.network.shuffle
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import org.apache.commons.lang3.SystemUtils
 import org.apache.spark.network.util.JavaUtils
 import org.slf4j.Logger
@@ -8,6 +9,7 @@ import sun.misc.{Signal, SignalHandler}
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.util.Collections
+import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecutor}
 import scala.collection.JavaConverters._
 import scala.util.control.ControlThrowable
 
@@ -65,6 +67,15 @@ object Utils extends Logging {
         logError(s"Uncaught exception in thread ${Thread.currentThread().getName}", t)
         throw t
     }
+  }
+
+  def newDaemonSingleThreadScheduledExecutor(threadName: String): ScheduledExecutorService = {
+    val threadFactory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
+    val executor = new ScheduledThreadPoolExecutor(1, threadFactory)
+    // By default, a cancelled task is not automatically removed from the work queue until its delay
+    // elapses. We have to enable it manually.
+    executor.setRemoveOnCancelPolicy(true)
+    executor
   }
 }
 

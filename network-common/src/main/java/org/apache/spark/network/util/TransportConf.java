@@ -155,6 +155,10 @@ public class TransportConf {
         return conf.getMaxChunksBeingTransferred();
     }
 
+    public String rmHttpAddress() {
+        return conf.getRmHttpAddress();
+    }
+
     public boolean cachePreferDirect() {
         return conf.getCache().isDirectMemory();
     }

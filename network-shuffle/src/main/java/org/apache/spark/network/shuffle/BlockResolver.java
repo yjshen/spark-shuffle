@@ -1,5 +1,6 @@
 package org.apache.spark.network.shuffle;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -17,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -24,6 +27,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -38,6 +44,10 @@ public abstract class BlockResolver {
     protected final ConcurrentMap<AppExecId, ExecutorShuffleInfo> executors;
 
     protected final ConcurrentMap<String, Byte> knownApps;
+
+    protected final ConcurrentMap<String, ScheduledFuture> appStatusMonitor;
+
+    protected final ScheduledExecutorService appStatusExecutor;
 
     /**
      * Caches index file information so that we can avoid open/close the index files
@@ -54,6 +64,8 @@ public abstract class BlockResolver {
     protected final DBProxy db;
 
     final boolean rddFetchEnabled = false;
+
+    final ObjectMapper om = new ObjectMapper();
 
     private final List<String> knownManagers = Arrays.asList(
         "org.apache.spark.shuffle.sort.SortShuffleManager",
@@ -76,6 +88,45 @@ public abstract class BlockResolver {
         executors = db.reloadAllExecutorsFromRecoveryFiles();
         knownApps = Maps.newConcurrentMap();
         this.directoryCleaner = directoryCleaner;
+        this.appStatusMonitor = Maps.newConcurrentMap();
+        this.appStatusExecutor =
+            Utils.newDaemonSingleThreadScheduledExecutor("app-status-listener");
+    }
+
+    public void setupAppStatusMonitor(String appId) {
+        appStatusMonitor.putIfAbsent(appId, appStatusExecutor.scheduleAtFixedRate(() -> {
+            // check app status using rm rest api
+            boolean finished = appFinished(appId);
+            if (finished) {
+                applicationRemoved(appId, false);
+            }
+        }, 10, 10, TimeUnit.MINUTES));
+    }
+
+    public boolean appFinished(String appId) {
+        int count = 0;
+
+        while (true) {
+            try {
+                URL appStatusUrl = new URL(conf.rmHttpAddress() + "/ws/v1/cluster/apps/" + appId + "/state");
+                HttpURLConnection conn = (HttpURLConnection) appStatusUrl.openConnection();
+                conn.setRequestMethod("GET");
+                if (conn.getResponseCode() == 200) {
+                    Map<String, Object> stateMap = om.readValue(conn.getInputStream(), Map.class);
+                    String state = (String) stateMap.get("state");
+                    logger.info("Get app status {} periodically, this time the state is {}", appId, state);
+                    if ("FINISHED".equals(state) || "FAILED".equals(state) || "KILLED".equals(state)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    throw new IOException("Get failed");
+                }
+            } catch (Exception e) {
+                if (++count == 3 /* maxTries */) return false;
+            }
+        }
     }
 
     /**
@@ -142,6 +193,8 @@ public abstract class BlockResolver {
                 }
             }
         }
+        appStatusMonitor.get(appId).cancel(true);
+        appStatusMonitor.remove(appId);
     }
 
     public int getRegisteredExecutorsSize() {
@@ -163,6 +216,7 @@ public abstract class BlockResolver {
         }
         db.registerExecutorInDBs(fullId, executorInfo);
         executors.put(fullId, executorInfo);
+        setupAppStatusMonitor(appId);
     }
 
     /**
