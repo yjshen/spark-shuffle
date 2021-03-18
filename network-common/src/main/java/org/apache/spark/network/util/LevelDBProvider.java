@@ -45,7 +45,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 public class LevelDBProvider {
     private static final Logger logger = LoggerFactory.getLogger(LevelDBProvider.class);
 
-    public static DB initLevelDB(File dbFile, StoreVersion version, ObjectMapper mapper) throws
+    public static DB initLevelDB(File dbFile, StoreVersion version, ObjectMapper mapper, boolean initInCpDir) throws
         IOException {
         DB tmpDb = null;
         if (dbFile != null) {
@@ -63,13 +63,15 @@ public class LevelDBProvider {
                     } catch (NativeDB.DBException dbExc) {
                         throw new IOException("Unable to create state store", dbExc);
                     }
-                } else if (e.getMessage().contains("LOCK: Resource temporarily unavailable")) {
+                } else if (e.getMessage().contains("LOCK: Resource temporarily unavailable") && !initInCpDir) {
                     // make a copy of the current ldb file and use the cp instead
                     String parent = dbFile.getParent();
                     String cp = dbFile.getName() + "-cp";
                     Path cpPath = Paths.get(parent, cp);
-                    copyFolder(dbFile.toPath(), cpPath);
-                    return initLevelDB(cpPath.toFile(), version, mapper);
+                    if (Files.notExists(cpPath)) {
+                        copyFolder(dbFile.toPath(), cpPath);
+                    }
+                    return initLevelDB(cpPath.toFile(), version, mapper, true);
                 } else {
                     // the leveldb file seems to be corrupt somehow.  Lets just blow it away and create a new
                     // one, so we can keep processing new apps
