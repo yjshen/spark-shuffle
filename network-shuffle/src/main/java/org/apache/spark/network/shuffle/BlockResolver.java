@@ -100,7 +100,7 @@ public abstract class BlockResolver {
             if (finished) {
                 applicationRemoved(appId, false);
             }
-        }, 10, 10, TimeUnit.MINUTES));
+        }, 1, 1, TimeUnit.HOURS));
     }
 
     public boolean appFinished(String appId) {
