@@ -93,18 +93,21 @@ public abstract class BlockResolver {
         this.appStatusExecutor =
             Utils.newDaemonSingleThreadScheduledExecutor("app-status-listener");
         // do cleanup first after restart
-        executors.forEach(((appExecId, executorShuffleInfo) ->
-            setupAppStatusMonitor(appExecId.appId, 1)));
+        executors.keySet().stream()
+            .map(k -> k.appId)
+            .distinct()
+            .forEach(appId -> setupAppStatusMonitor(appId));
     }
 
-    public void setupAppStatusMonitor(String appId, int checkIntervalMin) {
+    public void setupAppStatusMonitor(String appId) {
+        logger.info("Setting up app status monitor for app {}, currently we are monitoring {} apps", appId, appStatusMonitor.size());
         appStatusMonitor.putIfAbsent(appId, appStatusExecutor.scheduleAtFixedRate(() -> {
             // check app status using rm rest api
             boolean finished = appFinished(appId);
             if (finished) {
                 applicationRemoved(appId, false);
             }
-        }, checkIntervalMin, checkIntervalMin, TimeUnit.MINUTES));
+        }, appStatUpdateIntervalMinutes, appStatUpdateIntervalMinutes, TimeUnit.MINUTES));
     }
 
     public boolean appFinished(String appId) {
@@ -224,7 +227,7 @@ public abstract class BlockResolver {
         }
         db.registerExecutorInDBs(fullId, executorInfo);
         executors.put(fullId, executorInfo);
-        setupAppStatusMonitor(appId, appStatUpdateIntervalMinutes);
+        setupAppStatusMonitor(appId);
     }
 
     /**
