@@ -1,5 +1,6 @@
 package org.apache.spark.network.shuffle;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
@@ -60,6 +61,8 @@ public abstract class BlockResolver {
 
     protected final TransportConf conf;
 
+    protected final int appStatUpdateIntervalMinutes;
+
     @VisibleForTesting
     protected final DBProxy db;
 
@@ -73,6 +76,7 @@ public abstract class BlockResolver {
 
     public BlockResolver(TransportConf conf, Executor directoryCleaner) {
         this.conf = conf;
+        this.appStatUpdateIntervalMinutes = conf.appStatUpdateIntervalMinutes();
         String indexCacheSize = "100m";
         CacheLoader<File, ShuffleIndexInformation> indexCacheLoader =
             new CacheLoader<File, ShuffleIndexInformation>() {
@@ -100,7 +104,7 @@ public abstract class BlockResolver {
             if (finished) {
                 applicationRemoved(appId, false);
             }
-        }, 1, 1, TimeUnit.HOURS));
+        }, appStatUpdateIntervalMinutes, appStatUpdateIntervalMinutes, TimeUnit.MINUTES));
     }
 
     public boolean appFinished(String appId) {
@@ -108,12 +112,12 @@ public abstract class BlockResolver {
 
         while (true) {
             try {
-                URL appStatusUrl = new URL(conf.rmHttpAddress() + "/ws/v1/cluster/apps/" + appId + "/state");
+                URL appStatusUrl = new URL(conf.nmHttpAddress() + "/ws/v1/node/apps/" + appId + "?state");
                 HttpURLConnection conn = (HttpURLConnection) appStatusUrl.openConnection();
                 conn.setRequestMethod("GET");
                 if (conn.getResponseCode() == 200) {
-                    Map<String, Object> stateMap = om.readValue(conn.getInputStream(), Map.class);
-                    String state = (String) stateMap.get("state");
+                    JsonNode node = om.readTree(conn.getInputStream());
+                    String state = node.at("/app/state").asText();
                     logger.info("Get app status {} periodically, this time the state is {}", appId, state);
                     if ("FINISHED".equals(state) || "FAILED".equals(state) || "KILLED".equals(state)) {
                         return true;
@@ -121,10 +125,15 @@ public abstract class BlockResolver {
                         return false;
                     }
                 } else {
+                    logger.warn("Get app status {} periodically, this time the http code is {}",
+                        appId, conn.getResponseCode());
                     throw new IOException("Get failed");
                 }
             } catch (Exception e) {
-                if (++count == 3 /* maxTries */) return false;
+                if (++count == 3 /* maxTries */) {
+                    logger.warn("Failed to get app {} status for 3 times, we think it's finished", appId);
+                    return true;
+                }
             }
         }
     }

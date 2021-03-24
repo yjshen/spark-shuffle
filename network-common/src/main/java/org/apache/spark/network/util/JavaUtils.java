@@ -277,6 +277,10 @@ public class JavaUtils {
         return timeStringAs(str, TimeUnit.SECONDS);
     }
 
+    public static long timeStringAsMin(String str) {
+        return timeStringAs(str, TimeUnit.MINUTES);
+    }
+
     /**
      * Convert a passed byte string (e.g. 50b, 100kb, or 250mb) to the given. If no suffix is
      * provided, a direct conversion to the provided unit is attempted.

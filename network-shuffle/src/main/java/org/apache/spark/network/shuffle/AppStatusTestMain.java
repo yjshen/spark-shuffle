@@ -1,12 +1,12 @@
 package org.apache.spark.network.shuffle;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Map;
 
 public class AppStatusTestMain {
 
@@ -18,12 +18,12 @@ public class AppStatusTestMain {
 
         while (true) {
             try {
-                URL appStatusUrl = new URL("http://10.48.56.8:8088" + "/ws/v1/cluster/apps/" + appId + "/state");
+                URL appStatusUrl = new URL("http://0.0.0.0:8042/ws/v1/node/apps/" + appId + "?state");
                 HttpURLConnection conn = (HttpURLConnection) appStatusUrl.openConnection();
                 conn.setRequestMethod("GET");
                 if (conn.getResponseCode() == 200) {
-                    Map<String, Object> stateMap = om.readValue(conn.getInputStream(), Map.class);
-                    String state = (String) stateMap.get("state");
+                    JsonNode node = om.readTree(conn.getInputStream());
+                    String state = node.at("/app/state").asText();
                     logger.info("Get app status {} periodically, this time the state is {}", appId, state);
                     if ("FINISHED".equals(state) || "FAILED".equals(state) || "KILLED".equals(state)) {
                         return true;
@@ -34,7 +34,7 @@ public class AppStatusTestMain {
                     throw new IOException("Get failed");
                 }
             } catch (Exception e) {
-                if (++count == 3 /* maxTries */) return false;
+                if (++count == 3 /* maxTries */) return true;
             }
         }
     }

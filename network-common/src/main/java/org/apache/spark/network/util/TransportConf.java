@@ -57,6 +57,10 @@ public class TransportConf {
         return conf.getConnectionTimeoutMs();
     }
 
+    public int appStatUpdateIntervalMinutes() {
+        return conf.getAppStatUpdateIntervalMinutes();
+    }
+
     /**
      * Number of concurrent connections between two nodes for fetching data.
      */
@@ -155,8 +159,8 @@ public class TransportConf {
         return conf.getMaxChunksBeingTransferred();
     }
 
-    public String rmHttpAddress() {
-        return conf.getRmHttpAddress();
+    public String nmHttpAddress() {
+        return conf.getNmHttpAddress();
     }
 
     public boolean cachePreferDirect() {

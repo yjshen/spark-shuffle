@@ -33,7 +33,8 @@ public class ServiceConf {
     private boolean enableVerboseMetrics = false;
     private String spark3ExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark3_shuffle";
     private String sparkaeExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark_adaptive_shuffle";
-    private String rmHttpAddress = "http://10.48.56.8:8088";
+    private String nmHttpAddress = "http://0.0.0.0:8042";
+    private String appStatUpdateInterval = "10min";
 
     private CacheConf cache;
     private MetricsConf metrics;
@@ -87,7 +88,8 @@ public class ServiceConf {
             .add("enableVerboseMetrics", enableVerboseMetrics)
             .add("aePath", sparkaeExecutorPath)
             .add("3path", spark3ExecutorPath)
-            .add("rmAddr", rmHttpAddress)
+            .add("nmAddr", nmHttpAddress)
+            .add("stateCheckInterval", appStatUpdateInterval)
             .toString();
     }
 
@@ -203,13 +205,22 @@ public class ServiceConf {
         this.sparkaeExecutorPath = sparkaeExecutorPath;
     }
 
-    public String getRmHttpAddress() {
-        return rmHttpAddress;
+    public String getNmHttpAddress() {
+        return nmHttpAddress;
     }
 
-    public void setRmHttpAddress(String rmHttpAddress) {
-        this.rmHttpAddress = rmHttpAddress;
+    public void setNmHttpAddress(String nmHttpAddress) {
+        this.nmHttpAddress = nmHttpAddress;
     }
+
+    public int getAppStatUpdateIntervalMinutes() {
+        return Ints.checkedCast(JavaUtils.timeStringAsMin(appStatUpdateInterval));
+    }
+
+    public void setAppStatUpdateInterval(String appStatUpdateInterval) {
+        this.appStatUpdateInterval = appStatUpdateInterval;
+    }
+
 
     public int getBackLog() {
         return backLog;
