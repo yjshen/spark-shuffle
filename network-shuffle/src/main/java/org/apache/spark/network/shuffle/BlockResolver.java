@@ -88,13 +88,13 @@ public abstract class BlockResolver {
             .build(indexCacheLoader);
         db = new DBProxy(conf.getServiceConf());
         executors = db.reloadAllExecutorsFromRecoveryFiles();
-        // do cleanup first after restart
-        executors.forEach(((appExecId, executorShuffleInfo) ->
-            setupAppStatusMonitor(appExecId.appId, 1)));
         this.directoryCleaner = directoryCleaner;
         this.appStatusMonitor = Maps.newConcurrentMap();
         this.appStatusExecutor =
             Utils.newDaemonSingleThreadScheduledExecutor("app-status-listener");
+        // do cleanup first after restart
+        executors.forEach(((appExecId, executorShuffleInfo) ->
+            setupAppStatusMonitor(appExecId.appId, 1)));
     }
 
     public void setupAppStatusMonitor(String appId, int checkIntervalMin) {
