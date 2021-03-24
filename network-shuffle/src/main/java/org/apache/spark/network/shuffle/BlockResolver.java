@@ -44,8 +44,6 @@ public abstract class BlockResolver {
     @VisibleForTesting
     protected final ConcurrentMap<AppExecId, ExecutorShuffleInfo> executors;
 
-    protected final ConcurrentMap<String, Byte> knownApps;
-
     protected final ConcurrentMap<String, ScheduledFuture> appStatusMonitor;
 
     protected final ScheduledExecutorService appStatusExecutor;
@@ -90,21 +88,23 @@ public abstract class BlockResolver {
             .build(indexCacheLoader);
         db = new DBProxy(conf.getServiceConf());
         executors = db.reloadAllExecutorsFromRecoveryFiles();
-        knownApps = Maps.newConcurrentMap();
+        // do cleanup first after restart
+        executors.forEach(((appExecId, executorShuffleInfo) ->
+            setupAppStatusMonitor(appExecId.appId, 1)));
         this.directoryCleaner = directoryCleaner;
         this.appStatusMonitor = Maps.newConcurrentMap();
         this.appStatusExecutor =
             Utils.newDaemonSingleThreadScheduledExecutor("app-status-listener");
     }
 
-    public void setupAppStatusMonitor(String appId) {
+    public void setupAppStatusMonitor(String appId, int checkIntervalMin) {
         appStatusMonitor.putIfAbsent(appId, appStatusExecutor.scheduleAtFixedRate(() -> {
             // check app status using rm rest api
             boolean finished = appFinished(appId);
             if (finished) {
                 applicationRemoved(appId, false);
             }
-        }, appStatUpdateIntervalMinutes, appStatUpdateIntervalMinutes, TimeUnit.MINUTES));
+        }, checkIntervalMin, checkIntervalMin, TimeUnit.MINUTES));
     }
 
     public boolean appFinished(String appId) {
@@ -183,7 +183,6 @@ public abstract class BlockResolver {
      */
     public void applicationRemoved(String appId, boolean cleanupLocalDirs) {
         logger.info("Application {} removed, cleanupLocalDirs = {}", appId, cleanupLocalDirs);
-        knownApps.remove(appId);
         Iterator<Map.Entry<AppExecId, ExecutorShuffleInfo>> it = executors.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<AppExecId, ExecutorShuffleInfo> entry = it.next();
@@ -225,7 +224,7 @@ public abstract class BlockResolver {
         }
         db.registerExecutorInDBs(fullId, executorInfo);
         executors.put(fullId, executorInfo);
-        setupAppStatusMonitor(appId);
+        setupAppStatusMonitor(appId, appStatUpdateIntervalMinutes);
     }
 
     /**
