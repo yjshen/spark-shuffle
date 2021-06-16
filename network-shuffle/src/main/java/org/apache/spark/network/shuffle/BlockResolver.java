@@ -112,6 +112,8 @@ public abstract class BlockResolver {
 
     public boolean appFinished(String appId) {
         int count = 0;
+        int maxRetries = conf.maxStatRetries();
+        int retryWaitMs = conf.statRetryWaitTimeMs();
 
         while (true) {
             try {
@@ -133,7 +135,11 @@ public abstract class BlockResolver {
                     throw new IOException("Get failed");
                 }
             } catch (Exception e) {
-                if (++count == 3 /* maxTries */) {
+                try {
+                    Thread.sleep(retryWaitMs);
+                } catch (InterruptedException interruptedException) {
+                }
+                if (++count == maxRetries /* maxTries */) {
                     logger.warn("Failed to get app {} status for 3 times, we think it's finished", appId);
                     return true;
                 }

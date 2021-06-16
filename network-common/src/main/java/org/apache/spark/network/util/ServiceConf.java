@@ -35,6 +35,8 @@ public class ServiceConf {
     private String sparkaeExecutorPath = "/home/var/lib/yarn/yarn-nm-recovery/nm-aux-services/spark_adaptive_shuffle";
     private String nmHttpAddress = "http://0.0.0.0:8042";
     private String appStatUpdateInterval = "10min";
+    private int statMaxRetries = 20;
+    private String statRetryWait = "10s";
 
     private CacheConf cache;
     private MetricsConf metrics;
@@ -90,6 +92,8 @@ public class ServiceConf {
             .add("3path", spark3ExecutorPath)
             .add("nmAddr", nmHttpAddress)
             .add("stateCheckInterval", appStatUpdateInterval)
+            .add("stateMaxRetries", statMaxRetries)
+            .add("statRetryWaits", statRetryWait)
             .toString();
     }
 
@@ -155,6 +159,22 @@ public class ServiceConf {
 
     public void setRetryWait(String retryWait) {
         this.retryWait = retryWait;
+    }
+
+    public int getStatMaxRetries() {
+        return statMaxRetries;
+    }
+
+    public void setStatMaxRetries(int statMaxRetries) {
+        this.statMaxRetries = statMaxRetries;
+    }
+
+    public int getStatRetryWaitMs() {
+        return Ints.checkedCast(JavaUtils.timeStringAsMs(statRetryWait));
+    }
+
+    public void setStatRetryWait(String statRetryWait) {
+        this.statRetryWait = statRetryWait;
     }
 
     public boolean isLazyFD() {

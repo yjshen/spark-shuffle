@@ -123,6 +123,14 @@ public class TransportConf {
         return conf.getRetryWaitMs();
     }
 
+    public int maxStatRetries() {
+        return conf.getStatMaxRetries();
+    }
+
+    public int statRetryWaitTimeMs() {
+        return conf.getStatRetryWaitMs();
+    }
+
     /**
      * Minimum size of a block that we should start using memory map rather than reading in through
      * normal IO operations. This prevents Spark from memory mapping very small blocks. In general,
